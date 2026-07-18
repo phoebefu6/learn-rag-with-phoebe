@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 4 · How to judge a RAG system - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Leader session 4 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Leader track · Session 4 of 6</div>
+    <h1>How to judge a RAG system <span class="accent">without being a data scientist</span></h1>
+    <p class="sub">Your team demos a RAG assistant and the answer looks great. But looking great and being trustworthy are different things - and telling them apart is a leadership skill, not a coding one. This session hands you the scorecard the best teams use: the RAG Triad. By the end you can look at any RAG answer and ask, in plain English, did we retrieve the right passages, is the answer actually supported by them, and does it address the question - the three ways a RAG answer goes wrong, and how each one is measured.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Medium</span>
+      <span class="chip audience">Leaders: C-level · managers · curious minds</span>
+      <span class="chip audience">No code, ever</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Concepts</span>
+      <span class="a3" style="flex:4">20-40 · Exercises</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why "it looks right" is not good enough</h2>
+    </div>
+    <p class="lede">A RAG answer can fail in three completely different places, and the polished paragraph on the screen hides all of them. Maybe the search step pulled the wrong passages, so the model was working from bad source material. Maybe it pulled the right passages but the model ignored them and made something up anyway. Maybe the answer is perfectly true but does not actually address what was asked. Each of these is a different bug with a different owner and a different fix - and if you cannot name which one you are looking at, you cannot ask your team to fix it. The RAG Triad gives you the three names.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Try it now prompt</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The RAG Triad as a three-word trust test you can run on any answer, the difference between a retrieval problem and a generation problem (and the one rule that tells them apart), the handful of metrics worth demanding before production, and why you insist on a golden reference set before you believe any score.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE RAG TRIAD ============ -->
+  <section class="section" id="rag-triad">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the three-point trust test</span>
+      <h2>The RAG Triad <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">The RAG Triad, from DeepLearning.AI and TruLens, is the cleanest way a non-builder can reason about trust. Three questions, one per corner of a triangle. If all three are strong, the answer is trustworthy. If any one is weak, you know exactly where to look.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The RAG Triad triangle: Context Relevance at the top (did we retrieve the right passages), Groundedness at the bottom left (is the answer supported by them), and Answer Relevance at the bottom right (does the answer address the question)">
+        <style>
+          .a4tT { font: 700 15px Inter, sans-serif; fill: #FFFFFF; }
+          .a4tW { font: 400 12.5px Inter, sans-serif; fill: #EDE9FB; }
+          .a4tC { font: 700 15px Inter, sans-serif; fill: #4C1D95; }
+          .a4tS { font: 400 12.5px Inter, sans-serif; fill: #6E6685; }
+          .a4tN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .a4tE { stroke: #A78BFA; stroke-width: 2.5; fill: none; }
+        </style>
+        <line class="a4tE" x1="440" y1="95" x2="185" y2="290"/>
+        <line class="a4tE" x1="440" y1="95" x2="695" y2="290"/>
+        <line class="a4tE" x1="185" y1="290" x2="695" y2="290"/>
+        <circle cx="440" cy="210" r="52" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a4tC" x="440" y="206" text-anchor="middle">RAG</text>
+        <text class="a4tC" x="440" y="226" text-anchor="middle">Triad</text>
+        <rect x="300" y="30" width="280" height="66" rx="14" fill="#4C1D95"/>
+        <text class="a4tT" x="320" y="58">Context Relevance</text>
+        <text class="a4tW" x="320" y="80">Did we retrieve the right passages?</text>
+        <rect x="30" y="290" width="290" height="66" rx="14" fill="#6D28D9"/>
+        <text class="a4tT" x="50" y="318">Groundedness</text>
+        <text class="a4tW" x="50" y="340">Is the answer supported by them?</text>
+        <rect x="560" y="290" width="290" height="66" rx="14" fill="#8B5CF6"/>
+        <text class="a4tT" x="580" y="318">Answer Relevance</text>
+        <text class="a4tW" x="580" y="340">Does it address the question?</text>
+        <rect x="30" y="120" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a4tN" x="54" y="132">All three strong = trustworthy. Any one weak = you know exactly where the bug lives.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the RAG Triad: three questions that judge any answer</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Corner 1 · Context Relevance - did we retrieve the right passages?<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This corner judges the <strong>search step</strong>, before the model writes a word. When a question comes in, the retriever pulls a handful of passages. Context relevance asks: are those passages actually about the question, or did the search drag in noise?</p>
+        <ul>
+          <li><strong>What it catches:</strong> a retriever that fetches plausible-looking but off-target passages. If the source material is wrong, even a perfect model can only give you a confident wrong answer.</li>
+          <li><strong>Plain-English test:</strong> read the passages the system pulled. Would a smart colleague say "yes, these are the right paragraphs to answer this"? If not, context relevance is your problem.</li>
+          <li><strong>Who owns the fix:</strong> the retrieval side - better chunking, a better embedding model, or re-ranking. Not the prompt.</li>
+        </ul>
+        <div class="prompt-box good"><span class="label">★ Try it now (any chat AI)</span>Here is a question and the five passages a search system retrieved to answer it. Ignore the answer for now - just tell me, passage by passage, whether each one is actually relevant to the question, and give the set a context-relevance score out of 5. [paste a question and five passages]</div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Corner 2 · Groundedness - is the answer supported by the passages?<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This is the corner leaders care about most, because it is the hallucination check. Groundedness asks: every claim in the answer - can you point to a retrieved passage that backs it up? If a sentence in the answer has no support in the source material, the model invented it.</p>
+        <ul>
+          <li><strong>What it catches:</strong> confident hallucination. The passages were fine, but the model added, embellished, or drifted beyond what they actually say.</li>
+          <li><strong>Plain-English test:</strong> take each sentence of the answer and try to find the passage that supports it. A sentence with no home is an ungrounded claim.</li>
+          <li><strong>Why it is the trust metric:</strong> a grounded answer is one you can defend. An ungrounded one is a liability wearing a nice paragraph.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Groundedness is not the same as "true"</strong>
+          An answer can be grounded in the passages and still be wrong if the passages themselves are wrong or outdated. Groundedness only certifies "the model stayed faithful to its sources". Whether the sources are good is context relevance's job - which is exactly why you need all three corners, not one.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Corner 3 · Answer Relevance - does it address the question?<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The quietest failure. The answer is grounded, the passages were relevant, and yet the response does not actually answer what was asked - it wanders, over-explains, or answers a nearby question instead. Answer relevance closes the loop back to the user's real intent.</p>
+        <ul>
+          <li><strong>What it catches:</strong> on-topic-but-off-target answers. Common when a question has two parts and the model answers only one, or when it buries the answer in caveats.</li>
+          <li><strong>How it is measured under the hood:</strong> a neat trick - the system asks the model to generate questions the answer <em>would</em> be a good response to, then measures how close those are to the real question. If the answer implies a different question, relevance is low.</li>
+        </ul>
+        <p>Put the three together and you have a full trust picture: <em>right sources</em> (context relevance) → <em>faithful to them</em> (groundedness) → <em>and it actually answers</em> (answer relevance). Miss any one and the polished paragraph is hiding a fault.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: READING A SCORECARD ============ -->
+  <section class="section" id="reading-scorecard">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers metrics and the diagnostic rule</span>
+      <h2>Reading a scorecard without being a data scientist <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">When your team runs an evaluation tool like RAGAS, it hands back a scorecard of numbers. You do not need to compute them - you need to read them. Every metric falls into one of two buckets: did we FIND the information (retrieval), or did we USE it well (generation). That split is the whole diagnostic.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A RAG scorecard grouped into retrieval metrics (context recall, context precision) and generation metrics (faithfulness, answer relevancy), each shown as a score bar, with faithfulness flagged low">
+        <style>
+          .a4sH { font: 700 14px Inter, sans-serif; fill: #FFFFFF; }
+          .a4sG { font: 700 13px Inter, sans-serif; fill: #4C1D95; }
+          .a4sL { font: 600 13px Inter, sans-serif; fill: #211B33; }
+          .a4sD { font: 400 12px Inter, sans-serif; fill: #6E6685; }
+          .a4sV { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a4sN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <rect x="30" y="20" width="820" height="34" rx="8" fill="#4C1D95"/>
+        <text class="a4sH" x="50" y="42">RAG evaluation scorecard</text>
+        <text class="a4sH" x="620" y="42">score</text>
+        <text class="a4sH" x="740" y="42">verdict</text>
+        <!-- retrieval group -->
+        <rect x="30" y="66" width="140" height="120" rx="10" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a4sG" x="46" y="92">RETRIEVAL</text>
+        <text class="a4sD" x="46" y="112">did we FIND</text>
+        <text class="a4sD" x="46" y="128">the info?</text>
+        <rect x="184" y="70" width="666" height="52" rx="8" fill="#F5F3FF"/>
+        <text class="a4sL" x="200" y="92">Context Recall</text>
+        <text class="a4sD" x="200" y="110">found all the info needed?</text>
+        <rect x="500" y="82" width="240" height="18" rx="9" fill="#C7C0DA"/>
+        <rect x="500" y="82" width="214" height="18" rx="9" fill="#6D28D9"/>
+        <text class="a4sV" x="756" y="96">0.89 ✓</text>
+        <rect x="184" y="128" width="666" height="52" rx="8" fill="#F5F3FF"/>
+        <text class="a4sL" x="200" y="150">Context Precision</text>
+        <text class="a4sD" x="200" y="168">ranked the good chunks first?</text>
+        <rect x="500" y="140" width="240" height="18" rx="9" fill="#C7C0DA"/>
+        <rect x="500" y="140" width="199" height="18" rx="9" fill="#6D28D9"/>
+        <text class="a4sV" x="756" y="154">0.83 ✓</text>
+        <!-- generation group -->
+        <rect x="30" y="192" width="140" height="120" rx="10" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a4sG" x="46" y="218">GENERATION</text>
+        <text class="a4sD" x="46" y="238">did we USE</text>
+        <text class="a4sD" x="46" y="254">it well?</text>
+        <rect x="184" y="196" width="666" height="52" rx="8" fill="#F5F3FF"/>
+        <text class="a4sL" x="200" y="218">Faithfulness</text>
+        <text class="a4sD" x="200" y="236">no hallucination?</text>
+        <rect x="500" y="208" width="240" height="18" rx="9" fill="#C7C0DA"/>
+        <rect x="500" y="208" width="122" height="18" rx="9" fill="#C6961A"/>
+        <text class="a4sN" x="756" y="222">0.51 ⚠</text>
+        <rect x="184" y="254" width="666" height="52" rx="8" fill="#F5F3FF"/>
+        <text class="a4sL" x="200" y="276">Answer Relevancy</text>
+        <text class="a4sD" x="200" y="294">on topic?</text>
+        <rect x="500" y="266" width="240" height="18" rx="9" fill="#C7C0DA"/>
+        <rect x="500" y="266" width="221" height="18" rx="9" fill="#6D28D9"/>
+        <text class="a4sV" x="756" y="280">0.92 ✓</text>
+        <rect x="30" y="326" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a4sN" x="54" y="338">Retrieval is strong but faithfulness is low - a generation problem. Do not touch the retriever.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - one scorecard, two buckets, and the low number that names the bug</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Retrieval metrics vs generation metrics<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two buckets. Learn which side each number lives on and the scorecard stops being intimidating.</p>
+        <table class="clean">
+          <thead><tr><th>Metric</th><th>Bucket</th><th>In plain English</th></tr></thead>
+          <tbody>
+            <tr><td>Context Recall</td><td>Retrieval</td><td>Of everything needed to answer, how much did the search actually find? Needs a reference answer to check against.</td></tr>
+            <tr><td>Context Precision</td><td>Retrieval</td><td>Of what it found, were the good chunks ranked near the top rather than buried?</td></tr>
+            <tr><td>Faithfulness</td><td>Generation</td><td>Of the claims in the answer, how many are actually supported by the passages? The hallucination check.</td></tr>
+            <tr><td>Answer Relevancy</td><td>Generation</td><td>Does the answer stay on the question, without wandering or padding?</td></tr>
+          </tbody>
+        </table>
+        <p>Retrieval metrics judge the finding. Generation metrics judge the using. A single blended "accuracy" number tells you nothing actionable - the split is what makes a scorecard useful to a decision-maker.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The diagnostic rule that tells you who to call<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This is the one rule to remember from the whole session. When a RAG system is answering badly, do not guess - read which bucket is low:</p>
+        <ul>
+          <li><strong>Low faithfulness or answer relevancy → a generation problem.</strong> The passages were fine; the model mishandled them. The fix is prompt design, a refusal instruction, or a stronger model - <em>not</em> the retriever.</li>
+          <li><strong>Low context recall → a retriever problem.</strong> The search never found the information, so the model had no chance. The fix is chunking, the embedding model, or how many passages you pull - <em>not</em> the prompt.</li>
+          <li><strong>Check end-to-end first, then component-wise.</strong> Look at whether the final answer is good, then drop into the corners to find where it broke. This is the sequence the DeepLearning.AI course teaches.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The team that rebuilt the wrong half.</strong> A support-bot team (anonymized) saw bad answers and spent six weeks re-engineering their retriever. When they finally ran a proper scorecard, context recall was 0.9 and faithfulness was 0.5 - it had been a generation problem all along. A one-line "answer only from the passages, and say you don't know if they don't cover it" prompt fixed in an afternoon what six weeks of retriever work had not.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why you demand a golden reference set<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Some of these metrics - context recall and answer correctness especially - cannot be measured against thin air. To know whether the retriever found <em>everything</em> needed, or whether the answer is factually right, you need a trusted answer to compare against. That trusted set of question-and-ideal-answer pairs is the <strong>golden set</strong> (or reference set), and it is the single most valuable asset in a RAG evaluation.</p>
+        <ul>
+          <li><strong>Without it</strong>, scores are self-graded - the model checking its own homework - and context recall and answer correctness cannot be computed at all.</li>
+          <li><strong>With it</strong>, you get real numbers you can track over time, and you can prove an upgrade actually improved things rather than just feeling different.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The question to fund first</strong>
+          Answer correctness combines factual overlap with the reference answer and semantic similarity to it - so it only exists if a golden set exists. If your team wants to report "accuracy", your first question back is "against what reference set?" No golden set, no trustworthy accuracy number.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE 1 ============ -->
+  <section class="section" id="exercise-1">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 1 of 2</span>
+      <h2>Build your acceptance scorecard <span class="tag demo">★ 12 min · pen and paper</span></h2>
+    </div>
+    <p class="lede">Before you trust a RAG system in production, decide - now, in calm daylight - the five numbers you will demand to see. No code, just judgment.</p>
+    <div class="steps">
+      <div class="step"><p>Pick <strong>five metrics</strong> you would require before signing off. A strong default: context recall, context precision, faithfulness, answer relevancy, and one business threshold of your own (for example, refusal rate on out-of-scope questions).</p></div>
+      <div class="step"><p>For each, write the <strong>bucket</strong> it lives in (retrieval or generation) and, in one line, <strong>what failure it catches</strong>. If you cannot name the failure, drop the metric - it is decoration.</p></div>
+      <div class="step"><p>Set a <strong>pass threshold</strong> for each. You do not need the "right" number - you need a line drawn before the demo dazzles you. Faithfulness especially: what is the lowest you would accept?</p></div>
+      <div class="step"><p>Add one line at the top: <strong>"scored against golden set of ___ examples."</strong> If that blank cannot be filled, the whole scorecard is provisional - and that is your finding.</p></div>
+    </div>
+    <div class="prompt-box good"><span class="label">★ Your scorecard partner (paste into any chat AI)</span>Help me build an acceptance scorecard for a RAG system before I trust it in production. Propose five metrics, tell me for each whether it is a retrieval or generation metric and the exact failure it catches, and suggest a sensible pass threshold. Then ask me what golden reference set we will score against, and push back if I say we don't have one. Keep it in plain English for a non-technical decision-maker.</div>
+  </section>
+
+  <!-- ============ EXERCISE 2 ============ -->
+  <section class="section" id="exercise-2">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 2 of 2</span>
+      <h2>Judge a real answer on the Triad <span class="tag demo">★ 8 min · scoring drill</span></h2>
+    </div>
+    <p class="lede">Score one real answer by hand and the Triad becomes instinct. Here is a worked case; run it, then bring one of your own.</p>
+    <div class="steps">
+      <div class="step"><p><strong>The question:</strong> "How long do I have to return an item?" <strong>The retrieved passage:</strong> "Refunds policy: items may be returned within 30 days of delivery for a full refund, provided they are unused." <strong>The answer:</strong> "You have 30 days from delivery to return an item for a full refund, as long as it is unused. Note that gift cards are non-refundable."</p></div>
+      <div class="step"><p><strong>Context Relevance:</strong> is the passage the right source for this question? (Yes - it is the refunds policy, directly on point.)</p></div>
+      <div class="step"><p><strong>Groundedness:</strong> is every claim in the answer supported by the passage? The 30-days and unused parts are. But <em>"gift cards are non-refundable"</em> appears nowhere in the passage - that is an ungrounded claim, even if it happens to be true. Groundedness fails here.</p></div>
+      <div class="step"><p><strong>Answer Relevance:</strong> does it address the question asked? (Yes - it answers the return window directly.) Your verdict: strong on two corners, fails groundedness because of the invented gift-card line. That is exactly the kind of confident, plausible addition the metric exists to catch.</p></div>
+    </div>
+    <div class="callout tip">
+      <strong>The habit this builds</strong>
+      Once you have scored a few answers by the three corners, you will never again accept "it looks right" as a verdict. You will ask: right sources, faithful to them, and on the question? Three words, every time.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session a5 <span class="tag exercise">◐ 30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Finish your five-metric acceptance scorecard and keep it - session a5 turns the refusal and citation lines into governance controls you can insist on.</li>
+      <li>Run the Triad scoring drill on one real answer from a system you actually use (an internal assistant, a vendor demo). Note which corner is weakest.</li>
+      <li>Find out whether your team has a golden reference set, how big it is, and who maintains it. If the answer is "no", that is your most important finding of the week.</li>
+      <li>Optional: skim the builder track's evaluation session to see these same metrics computed in a tool - you do not need the code, but the numbers will feel more concrete.</li>
+    </ul>
+    <div class="callout win">
+      <strong>★ Questions to ask your data team this week</strong>
+      <ol>
+        <li>When we say an answer is "good", are we measuring groundedness, or just eyeballing it - and can you show me a faithfulness score?</li>
+        <li>Do we have a golden reference set? How many examples, and who keeps it current?</li>
+        <li>When answers are bad, do we check whether it is a retrieval problem or a generation problem before we start fixing?</li>
+        <li>What are our current context recall and faithfulness numbers, and what thresholds must they clear before production?</li>
+        <li>How does our system score on answer relevance - does it ever answer a nearby question instead of the one asked?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">The leader track teaches from published course curricula and evaluation frameworks - no vendor marketing. This page covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">DeepLearning.AI · Building &amp; Evaluating Advanced RAG · the RAG Triad</span><span class="note">Part 1 · Context Relevance, Groundedness, Answer Relevance; end-to-end then component-wise</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">RAGAS · evaluation metrics</span><span class="note">Part 2 · faithfulness, answer relevancy, context precision/recall, answer correctness</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">OpenAI · Evaluate RAG (cookbook)</span><span class="note">Part 2 · the split between retrieval and generation quality</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · The three corners of the RAG Triad are...</p>
+      <button class="qopt" type="button">A · Speed, cost, and accuracy</button>
+      <button class="qopt" type="button">B · Context relevance (right passages), groundedness (answer supported by them), answer relevance (addresses the question)</button>
+      <button class="qopt" type="button">C · Precision, recall, and F1</button>
+      <p class="qwhy">Context relevance judges the retrieved passages, groundedness judges whether the answer is faithful to them, and answer relevance judges whether it addresses the question.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Your scorecard shows context recall 0.9 but faithfulness 0.5. The bug is...</p>
+      <button class="qopt" type="button">A · A retrieval problem - rebuild the search step</button>
+      <button class="qopt" type="button">B · Nothing - 0.5 is a passing grade</button>
+      <button class="qopt" type="button">C · A generation problem - the passages were found, but the model isn't staying faithful to them; fix the prompt or model, not the retriever</button>
+      <p class="qwhy">Strong recall means retrieval found the info. Low faithfulness means the model hallucinated beyond the passages - a generation problem. Do not touch the retriever.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Why do you insist on a golden reference set before believing an "accuracy" number?</p>
+      <button class="qopt" type="button">A · Metrics like context recall and answer correctness need a trusted answer to compare against - without one, the model is grading its own homework</button>
+      <button class="qopt" type="button">B · It makes the demo run faster</button>
+      <button class="qopt" type="button">C · Regulators require exactly 100 examples</button>
+      <p class="qwhy">Context recall and answer correctness are measured against reference answers. No golden set means no trustworthy accuracy, only self-grading.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 4 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The RAG Triad</b><span>Context relevance · groundedness · answer relevance. All strong = trustworthy; any weak = a located bug.</span></div>
+      <div class="cheat-item"><b>Context relevance</b><span>Did we retrieve the right passages? Catches a retriever that pulls plausible but off-target sources.</span></div>
+      <div class="cheat-item"><b>Groundedness</b><span>Is every claim supported by the passages? The hallucination check - and grounded is not the same as true.</span></div>
+      <div class="cheat-item"><b>Answer relevance</b><span>Does it actually address the question? Catches on-topic-but-off-target answers.</span></div>
+      <div class="cheat-item"><b>Two buckets</b><span>Retrieval = did we FIND it (recall, precision). Generation = did we USE it well (faithfulness, relevancy).</span></div>
+      <div class="cheat-item"><b>The diagnostic rule</b><span>Low faithfulness → generation problem. Low context recall → retriever problem. Check end-to-end first.</span></div>
+      <div class="cheat-item"><b>Golden set</b><span>A trusted question-and-ideal-answer set. No golden set = no real context recall or answer correctness.</span></div>
+      <div class="cheat-item"><b>The verdict habit</b><span>Never accept "it looks right". Ask: right sources, faithful to them, and on the question?</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 4 of 6 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="a3-cost-quality.html">← Previous: Cost and quality</a> &nbsp;·&nbsp; <a href="a5-risk-governance.html">Next: Risk and governance →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

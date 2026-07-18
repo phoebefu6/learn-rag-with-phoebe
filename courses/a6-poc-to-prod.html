@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 6 · From POC to production - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Leader session 6 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Leader track · Session 6 of 6</div>
+    <h1>From POC to production <span class="accent">and where RAG is heading</span></h1>
+    <p class="sub">The most dangerous moment in a RAG project is the one that feels like success: the demo works, everyone claps, and someone says "ship it". A working demo and a trusted production system are separated by a real distance - evaluation, governance, monitoring - and this final session is the roadmap across it. You will place your own project on the map, name the gate it must pass next, meet the team roles that make it real, and finally see where RAG is going: from a fixed pipeline to a tool an agent decides to call.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Deciding</span>
+      <span class="chip audience">Leaders: C-level · managers · curious minds</span>
+      <span class="chip audience">No code, ever</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Concepts</span>
+      <span class="a3" style="flex:4">20-40 · Exercises</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The demo is the start line, not the finish</h2>
+    </div>
+    <p class="lede">Everything you have learned across five sessions converges here. You know what RAG is, how it is built, what it costs, how to judge it, and how to govern it. Now the question is operational: how do you move from "it worked in the demo" to "we trust it in production, and we can prove it"? The answer is a series of gates, each adding one thing the last one lacked. A team that ships the demo skips the gates and pays for it later. A team that names its current gate - and what it must pass next - is doing the actual work of productionizing AI. That naming is what you leave this course able to do.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Try it now prompt</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The four-stage POC-to-production roadmap and the trap of shipping the POC, the team roles that carry a RAG system, the honest line between when plain RAG is enough and when you need an agent, contextual retrieval as today's quality frontier, and a warm sense of where to go next.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: ROADMAP ============ -->
+  <section class="section" id="roadmap">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the four gates to production</span>
+      <h2>The POC-to-prod roadmap <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">Four stages, each one adding what the previous lacked. You cannot skip a stage; you can only pretend to, and the pretending shows up in production. Everything from sessions a1 through a5 slots onto this strip.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A four-stage roadmap strip: POC (does retrieval work at all), Evaluated (we have a scorecard), Governed (access, refusal, citations), and Production (monitored, fresh, cost-capped), with arrows between each stage">
+        <style>
+          .a6rT { font: 700 16px Inter, sans-serif; fill: #FFFFFF; }
+          .a6rW { font: 400 12px Inter, sans-serif; fill: #EDE9FB; }
+          .a6rH { font: 700 16px Inter, sans-serif; fill: #211B33; }
+          .a6rS { font: 400 12px Inter, sans-serif; fill: #4A4360; }
+          .a6rK { font: 700 12px Inter, sans-serif; fill: #A78BFA; }
+          .a6rN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .a6rArr { stroke: #A78BFA; stroke-width: 3; fill: none; marker-end: url(#a6rAh); }
+        </style>
+        <defs>
+          <marker id="a6rAh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#8B5CF6" stroke-width="1.8"/>
+          </marker>
+        </defs>
+        <rect x="24" y="70" width="180" height="150" rx="14" fill="#4C1D95"/>
+        <text class="a6rK" x="42" y="98">STAGE 1</text>
+        <text class="a6rT" x="42" y="120">POC</text>
+        <text class="a6rW" x="42" y="150">Does retrieval</text>
+        <text class="a6rW" x="42" y="168">work at all?</text>
+        <text class="a6rW" x="42" y="196">the demo</text>
+        <rect x="236" y="70" width="180" height="150" rx="14" fill="#6D28D9"/>
+        <text class="a6rK" x="254" y="98">STAGE 2</text>
+        <text class="a6rT" x="254" y="120">Evaluated</text>
+        <text class="a6rW" x="254" y="150">We have a</text>
+        <text class="a6rW" x="254" y="168">scorecard</text>
+        <text class="a6rW" x="254" y="196">the Triad + golden set</text>
+        <rect x="448" y="70" width="180" height="150" rx="14" fill="#8B5CF6"/>
+        <text class="a6rK" x="466" y="98">STAGE 3</text>
+        <text class="a6rT" x="466" y="120">Governed</text>
+        <text class="a6rW" x="466" y="150">Access, refusal,</text>
+        <text class="a6rW" x="466" y="168">citations</text>
+        <text class="a6rW" x="466" y="196">the a5 controls</text>
+        <rect x="660" y="70" width="196" height="150" rx="14" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a6rK" x="678" y="98" fill="#8B5CF6">STAGE 4</text>
+        <text class="a6rH" x="678" y="120">Production</text>
+        <text class="a6rS" x="678" y="150">Monitored, fresh,</text>
+        <text class="a6rS" x="678" y="168">cost-capped</text>
+        <text class="a6rS" x="678" y="196">and still measured</text>
+        <line class="a6rArr" x1="206" y1="145" x2="232" y2="145"/>
+        <line class="a6rArr" x1="418" y1="145" x2="444" y2="145"/>
+        <line class="a6rArr" x1="630" y1="145" x2="656" y2="145"/>
+        <rect x="24" y="256" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a6rN" x="48" y="268">The trap: shipping Stage 1 as if it were Stage 4. A demo proves it CAN work, not that it's trustworthy.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - four gates, each adding what the last one lacked</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The trap of shipping the POC<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A proof-of-concept answers exactly one question: <em>can retrieval work at all for this use case?</em> That is genuinely valuable - it kills bad ideas cheaply. But it is a single hand-picked demo, not evidence of reliability. The trap is treating "it worked when I tried it" as "it works".</p>
+        <ul>
+          <li><strong>A POC has no scorecard.</strong> You watched a few answers look good. You do not know the faithfulness rate, the refusal behavior, or how it does on the hard 10% of questions.</li>
+          <li><strong>A POC has no governance.</strong> No access filtering, no audit log, no refusal policy. Fine for a demo, a liability in production.</li>
+          <li><strong>A POC is unmonitored.</strong> When quality drifts - and it will, as documents change - nobody is watching.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The sentence that saves projects</strong>
+          "This is a great POC - what does it need to reach the next gate?" Said in the meeting where everyone wants to ship, that one question is often the difference between a system you are proud of and an incident you are explaining.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>What each stage adds<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Read the roadmap as a stack of guarantees, each stage earning the right to the next.</p>
+        <table class="clean">
+          <thead><tr><th>Stage</th><th>Adds</th><th>Gate to pass</th></tr></thead>
+          <tbody>
+            <tr><td>POC</td><td>Proof retrieval can work</td><td>Does a good answer come out at all?</td></tr>
+            <tr><td>Evaluated</td><td>A scorecard on a golden set</td><td>Do faithfulness and recall clear our thresholds?</td></tr>
+            <tr><td>Governed</td><td>Access, refusal, citations, audit</td><td>Can it refuse, cite, and respect permissions?</td></tr>
+            <tr><td>Production</td><td>Monitoring, freshness, cost caps</td><td>Will we notice when it drifts, and can we afford it?</td></tr>
+          </tbody>
+        </table>
+        <p>Notice how the whole course maps on: a1-a2 got you to a POC, a3 made it affordable, a4 made it evaluated, a5 made it governed. This session is about not stopping until production.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The team that carries a RAG system<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Production RAG is not one engineer's side project. Four roles keep it honest, and as a leader your job is to make sure each one has an owner:</p>
+        <ul>
+          <li><strong>Data owner.</strong> Decides what goes in the index, keeps it fresh, and retires stale documents. Owns the answer to "is our knowledge current?"</li>
+          <li><strong>Retrieval engineer.</strong> Owns the search step - chunking, embeddings, re-ranking. The person you call when context recall is low.</li>
+          <li><strong>Evaluator.</strong> Owns the scorecard and the golden set. Reports faithfulness and recall over time, and proves whether a change actually helped.</li>
+          <li><strong>Domain expert.</strong> The person who knows whether an answer is actually right in the real world - the source of truth for the golden set, and the final judge of quality.</li>
+        </ul>
+        <p>These need not be four people, but they are four hats. A system missing the evaluator hat ships on vibes; one missing the domain-expert hat optimizes numbers that do not match reality.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: RAG VS AGENTS ============ -->
+  <section class="section" id="rag-vs-agents">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers RAG vs agents and the 2026 frontier</span>
+      <h2>RAG vs agents, and where this is heading <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">The frontier is moving fast, so here is the honest, durable version. The big shift: RAG is becoming something an agent <em>decides to use</em>, rather than a fixed pipeline that always runs. Retrieval turns into a tool the model can call when it judges it needs to.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RAG as a tool an agent can call: an agent in the centre decides whether to call a retrieve tool, alongside other tools, rather than always running a fixed retrieve-then-generate pipeline">
+        <style>
+          .a6fT { font: 700 15px Inter, sans-serif; fill: #FFFFFF; }
+          .a6fW { font: 400 12px Inter, sans-serif; fill: #EDE9FB; }
+          .a6fH { font: 700 15px Inter, sans-serif; fill: #211B33; }
+          .a6fS { font: 400 12px Inter, sans-serif; fill: #4A4360; }
+          .a6fN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .a6fArr { stroke: #A78BFA; stroke-width: 2.5; fill: none; marker-end: url(#a6fAh); }
+          .a6fDash { stroke: #C7C0DA; stroke-width: 2; stroke-dasharray: 5 4; fill: none; }
+        </style>
+        <defs>
+          <marker id="a6fAh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#8B5CF6" stroke-width="1.6"/>
+          </marker>
+        </defs>
+        <rect x="330" y="110" width="220" height="90" rx="16" fill="#4C1D95"/>
+        <text class="a6fT" x="352" y="145">Agent</text>
+        <text class="a6fW" x="352" y="168">decides WHICH tool,</text>
+        <text class="a6fW" x="352" y="186">and WHETHER to retrieve</text>
+        <rect x="620" y="40" width="220" height="70" rx="14" fill="#6D28D9"/>
+        <text class="a6fT" x="642" y="70">Retrieve tool (RAG)</text>
+        <text class="a6fW" x="642" y="92">fetch &amp; ground on docs</text>
+        <rect x="620" y="130" width="220" height="70" rx="14" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a6fH" x="642" y="160">Other tools</text>
+        <text class="a6fS" x="642" y="182">search web · call an API</text>
+        <rect x="620" y="220" width="220" height="70" rx="14" fill="#8B5CF6"/>
+        <text class="a6fT" x="642" y="250">Answer directly</text>
+        <text class="a6fW" x="642" y="272">when no retrieval needed</text>
+        <rect x="40" y="130" width="220" height="70" rx="14" fill="#6D28D9"/>
+        <text class="a6fT" x="62" y="160">Question</text>
+        <text class="a6fW" x="62" y="182">from a user</text>
+        <line class="a6fArr" x1="262" y1="165" x2="326" y2="160"/>
+        <line class="a6fArr" x1="552" y1="140" x2="616" y2="82"/>
+        <line class="a6fDash" x1="552" y1="160" x2="616" y2="162"/>
+        <line class="a6fDash" x1="552" y1="180" x2="616" y2="248"/>
+        <rect x="40" y="270" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a6fN" x="64" y="282">Agentic RAG: retrieval becomes a tool the model calls when it judges it's needed - not a fixed step.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - RAG as one tool an agent can choose to call</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>When plain RAG is enough vs when you need an agent<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Do not reach for an agent because it sounds advanced. The distinction is about the shape of the task.</p>
+        <ul>
+          <li><strong>Plain RAG is enough</strong> when the job is "answer this question from our documents". One retrieve, one generate, done. This covers the large majority of real use cases - support bots, policy assistants, research helpers - and it is simpler to build, cheaper to run, and easier to govern.</li>
+          <li><strong>You need an agent</strong> when the task requires several steps, or a choice between actions: search our docs, <em>then</em> look something up externally, <em>then</em> decide whether to retrieve again. An agent can call retrieval as one of several tools and decide when to use it.</li>
+          <li><strong>The plain-language test:</strong> if the task is "look it up and tell me", that is RAG. If it is "figure out what to do, using lookup as one of your moves", that is an agent that <em>uses</em> RAG.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The discipline this course keeps returning to</strong>
+          Start with the simplest thing that works. Plain RAG first; an agent only when a single retrieve-and-answer genuinely cannot do the job. Complexity you did not need is the most common way these projects get expensive and fragile.</div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Contextual retrieval - today's quality frontier<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>If you want one concrete upgrade to ask about, it is contextual retrieval. The problem it solves: when you chop a document into chunks, each chunk loses the context around it - a paragraph that says "the threshold was raised to 30" no longer knows <em>which</em> threshold or <em>when</em>. Contextual retrieval adds a short blurb of surrounding context to each chunk before indexing, so the retrieved passage carries its own meaning.</p>
+        <ul>
+          <li><strong>Why it matters to you:</strong> it meaningfully reduces retrieval failures - the wrong-passage problem from session a4 - which is the root of a lot of bad answers. Sessions a3 and a4 carry the specific numbers.</li>
+          <li><strong>How to treat it:</strong> as the current best-practice frontier for quality, worth asking your team whether they have adopted. Not a silver bullet - it still needs the same evaluation and governance - but a real step up.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The chunk that forgot what it meant.</strong> A team (anonymized) kept seeing their assistant confuse two similarly worded policies. The chunks had been split so finely that neither carried enough context to tell them apart. Adding a one-line context header to each chunk before indexing - contextual retrieval - separated them cleanly, without touching the model at all.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The honest "re-verify the tooling" note, and where to go next<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>One honest caveat to close on: this space moves fast. The frameworks, the tool names, the exact best-practice recipe - all of it shifts on a timescale of months. Agentic RAG in particular is an active frontier, and the specific way a framework wires it up this quarter may look different next quarter.</p>
+        <ul>
+          <li><strong>What is durable</strong> is everything in this course: the retrieve-augment-generate idea, the three doors, the RAG Triad, the governance controls, the roadmap. These are concepts, and concepts age well.</li>
+          <li><strong>What to re-verify</strong> is the tooling - which library, which feature, which vendor. Treat any specific tool claim as "true as of when we checked", and check again before you commit.</li>
+        </ul>
+        <p><strong>And that is the leader track.</strong> Six sessions ago, "AI that uses our data" was a phrase in a vendor pitch. Now you can define RAG in a breath, sort the three doors, judge an answer on the Triad, govern the risks, and map a project from demo to production. That is a genuinely rare literacy. If you want to feel how it is actually built - the embeddings, the retrieval, the live playground - the <strong>builder track starts at b1</strong>, and the natural next step for hands-on orchestration is <a href="https://phoebefu6.github.io/learn-langchain-with-phoebe/">LangChain ↗</a>. Thank you for spending the hours. Go ask your team the good questions.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE 1 ============ -->
+  <section class="section" id="exercise-1">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 1 of 2</span>
+      <h2>Place your project on the roadmap <span class="tag demo">★ 12 min · pen and paper</span></h2>
+    </div>
+    <p class="lede">The whole course pays off in this one honest placement. No code - just your real project and the four gates.</p>
+    <div class="steps">
+      <div class="step"><p>Name a real RAG project (or proposed one) in your organization. Write the four stages - <strong>POC · Evaluated · Governed · Production</strong> - as a line.</p></div>
+      <div class="step"><p>Place your project honestly. Most "live" systems are actually at <strong>POC or Evaluated</strong> wearing a production badge. Resist the flattering placement.</p></div>
+      <div class="step"><p>Name the <strong>next gate</strong> it must pass and the one thing that gate requires - a golden set, an access filter, a monitoring plan. Be specific: "we need a 50-example golden set owned by [name]" beats "improve evaluation".</p></div>
+      <div class="step"><p>Write the sentence you will say in your next project meeting: <strong>"We're at ___, the next gate is ___, and to pass it we need ___ by ___."</strong> That sentence is your entire course, applied.</p></div>
+    </div>
+    <div class="prompt-box good"><span class="label">★ Your roadmap partner (paste into any chat AI)</span>Help me place a RAG project on a four-stage roadmap: POC (retrieval works at all), Evaluated (scorecard on a golden set), Governed (access, refusal, citations, audit), Production (monitored, fresh, cost-capped). Ask me questions to figure out which stage my project is really at, challenge me if I over-place it, then help me name the exact next gate and the one thing needed to pass it. Here's my project: [describe it]</div>
+  </section>
+
+  <!-- ============ EXERCISE 2 ============ -->
+  <section class="section" id="exercise-2">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 2 of 2</span>
+      <h2>The RAG-vs-agent decision for your top use case <span class="tag demo">★ 8 min · decision drill</span></h2>
+    </div>
+    <p class="lede">One last decision to make with a clear head, before someone sells you an agent you do not need.</p>
+    <div class="steps">
+      <div class="step"><p>Take your <strong>top use case</strong> and describe the task in one sentence, starting with a verb: "answer questions about...", "look up and summarize...", "decide and act on...".</p></div>
+      <div class="step"><p>Apply the test: is it <strong>"look it up and tell me"</strong> (plain RAG) or <strong>"figure out what to do, using lookup as one move"</strong> (an agent that uses RAG)? Most use cases are the former.</p></div>
+      <div class="step"><p>If you leaned agent, list the <strong>multiple steps or choices</strong> that justify it. If you cannot name at least two genuine steps or a real branch, it is plain RAG dressed up - go simpler.</p></div>
+      <div class="step"><p>Write your verdict and the reason. Then note what quality frontier you would ask about first - contextual retrieval is a strong default - and who on your team owns finding out.</p></div>
+    </div>
+    <div class="callout tip">
+      <strong>The graduation move</strong>
+      Every one of these exercises ends the same way: the simplest thing that works, named owners, and a specific next step. That is not a RAG skill - it is how you make any AI project real. Carry it out of this course.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>After the leader track <span class="tag exercise">◐ 30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Finish placing your top project on the roadmap and take the "we're at ___, next gate is ___" sentence into a real meeting this week.</li>
+      <li>Make the RAG-vs-agent call on your top use case and write down the reason, so future-you can check whether it held.</li>
+      <li>Ask your team whether they have adopted contextual retrieval, and treat any tooling answer as "true as of today - let's re-verify before we commit".</li>
+      <li>Optional and encouraged: open the builder track's b1 session to see retrieval built for real, and skim <a href="https://phoebefu6.github.io/learn-langchain-with-phoebe/">LangChain ↗</a> for where hands-on orchestration goes next.</li>
+    </ul>
+    <div class="callout win">
+      <strong>★ Questions to ask your data team this week</strong>
+      <ol>
+        <li>Honestly, which roadmap stage is each of our RAG projects at - and are we treating any POC as if it were production?</li>
+        <li>What is the next gate our flagship project must pass, and what single thing does it need to get there?</li>
+        <li>Do our four roles - data owner, retrieval engineer, evaluator, domain expert - each have a named owner?</li>
+        <li>For our top use case, is this really plain RAG, or does it genuinely need an agent that calls retrieval as one tool?</li>
+        <li>Have we adopted contextual retrieval, and how do we keep verifying our tooling as this space keeps moving?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">The leader track teaches from published engineering guidance - no vendor marketing. This page covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Contextual Retrieval</span><span class="note">Part 2 · adding context to chunks before indexing · the current quality frontier</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">LangChain · agentic RAG (high-level)</span><span class="note">Part 2 · retrieval as a tool the model decides to call · re-verify specifics, they move fast</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">"Redesign the workflow" productionizing framing (ours)</span><span class="note">Part 1 · the four-gate roadmap and the trap of shipping the POC</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · The four stages of the POC-to-production roadmap, in order, are...</p>
+      <button class="qopt" type="button">A · Idea, build, launch, forget</button>
+      <button class="qopt" type="button">B · POC (works at all), Evaluated (scorecard), Governed (access/refusal/citations), Production (monitored, fresh, cost-capped)</button>
+      <button class="qopt" type="button">C · Prompt, fine-tune, agent, superintelligence</button>
+      <p class="qwhy">Each stage adds what the last lacked: proof it works, then a scorecard, then governance, then production monitoring and freshness. Skipping a gate shows up in production.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · When is a full agent warranted over plain RAG?</p>
+      <button class="qopt" type="button">A · Always - agents are more advanced</button>
+      <button class="qopt" type="button">B · Never - agents don't work yet</button>
+      <button class="qopt" type="button">C · When the task needs multiple steps or a choice between actions, so retrieval becomes one tool the model decides when to call</button>
+      <p class="qwhy">"Look it up and tell me" is plain RAG. "Figure out what to do, using lookup as one move" is an agent that calls retrieval as a tool. Start simple.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Contextual retrieval improves quality by...</p>
+      <button class="qopt" type="button">A · Adding a short blurb of surrounding context to each chunk before indexing, so a retrieved passage carries its own meaning</button>
+      <button class="qopt" type="button">B · Making the model larger</button>
+      <button class="qopt" type="button">C · Deleting all the documents</button>
+      <p class="qwhy">Chunking strips a passage of its surrounding context; contextual retrieval restores it before indexing, cutting the wrong-passage failures that cause bad answers.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 6 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The four gates</b><span>POC → Evaluated → Governed → Production. Each adds what the last lacked; you can't skip one.</span></div>
+      <div class="cheat-item"><b>The POC trap</b><span>A demo proves retrieval CAN work, not that it's trustworthy. Don't ship Stage 1 as Stage 4.</span></div>
+      <div class="cheat-item"><b>The team hats</b><span>Data owner · retrieval engineer · evaluator · domain expert. Each needs a named owner.</span></div>
+      <div class="cheat-item"><b>Plain RAG vs agent</b><span>"Look it up and tell me" = RAG. "Figure out what to do, using lookup" = agent that calls RAG.</span></div>
+      <div class="cheat-item"><b>Agentic RAG</b><span>Retrieval becomes a tool the model decides when to call - not a fixed retrieve-then-generate step.</span></div>
+      <div class="cheat-item"><b>Contextual retrieval</b><span>Add surrounding context to each chunk before indexing; today's quality frontier for retrieval.</span></div>
+      <div class="cheat-item"><b>Re-verify the tooling</b><span>Concepts are durable; frameworks and features move fast. Re-check specifics before you commit.</span></div>
+      <div class="cheat-item"><b>The graduation move</b><span>Simplest thing that works, named owners, a specific next step. Carry it to any AI project.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 6 of 6 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="a5-risk-governance.html">← Previous: Risk and governance</a> &nbsp;·&nbsp; <a href="b1-embeddings.html">Next: switch to the builder track →</a> &nbsp;·&nbsp; <a href="https://phoebefu6.github.io/learn-langchain-with-phoebe/">LangChain ↗</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

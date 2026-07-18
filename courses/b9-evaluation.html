@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 9 · RAG evaluation - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 9 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 9 of 10</div>
+    <h1>RAG evaluation: <span class="accent">measuring what "good" means</span></h1>
+    <p class="sub">You have built the whole pipeline - chunk, embed, store, retrieve, rerank, augment, generate, cite. Now the hard question: is it any good? "It felt right in the demo" is how RAG systems quietly rot in production. This session gives you a scorecard. You will learn to split failures into two buckets - the retriever's fault or the generator's fault - build a golden set of questions with reference answers, and run real metrics: faithfulness, answer relevancy, context precision and recall, hit rate and MRR, all powered by an LLM-as-judge. By the end, Recall stops being a vibe and starts being a number you can move.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Builder track · advanced</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Concept + code</span>
+      <span class="chip time">Session 9 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-22 · Concepts</span>
+      <span class="a3" style="flex:4">22-40 · Golden set + eval</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why "it feels right" is a trap</h2>
+    </div>
+    <p class="lede">A RAG system has a lot of moving parts, and each one can fail silently. Bad chunks, a retriever that misses, a reranker that hurts, a model that hallucinates confidently over perfect context. When the answer looks wrong, <strong>which part do you fix?</strong> Without measurement you are guessing, and guessing at a five-stage pipeline is how a week disappears. Evaluation turns "something is off" into "context recall dropped to 0.4 - the retriever is missing chunks". That is the whole game today.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Recall gets a scorecard</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A working mental model of retrieval metrics vs generation metrics, a golden/reference set built from Recall's real failures, and a RAGAS-style eval script that scores faithfulness, answer relevancy, and context precision/recall - so every future change to Recall can be judged, not felt.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: RETRIEVAL VS GENERATION METRICS ============ -->
+  <section class="section" id="two-families">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the two metric families + diagnosis</span>
+      <h2>Retrieval metrics vs generation metrics <span class="tag concept">10 min live</span></h2>
+    </div>
+    <p class="lede">Every RAG metric answers one of two questions: <em>did we fetch the right context?</em> (retrieval) or <em>did we write a good answer from it?</em> (generation). Keeping them apart is the single most useful habit in RAG evaluation, because it tells you which half of the pipeline to fix. A low retrieval score points at chunking and search; a low generation score points at your prompt and model.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two columns of RAG metrics. Left column retrieval: hit rate, context precision, context recall. Right column generation: faithfulness, answer relevancy, answer correctness. A diagnostic band shows low recall points at the retriever and low faithfulness points at the generator.">
+        <style>
+          .b9mHr { fill: #4C1D95; }
+          .b9mHg { fill: #6D28D9; }
+          .b9mHt { font: 800 15px Inter, sans-serif; fill: #FFFFFF; letter-spacing: .5px; }
+          .b9mCard { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b9mName { font: 800 14px Inter, sans-serif; fill: #211B33; }
+          .b9mDesc { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b9mArr { stroke: #6D28D9; stroke-width: 2.5; fill: none; marker-end: url(#b9mAh); }
+          .b9mDiag { font: 700 12.5px Inter, sans-serif; fill: #4C1D95; }
+          .b9mN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b9mAh" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#6D28D9"/></marker>
+        </defs>
+        <!-- headers -->
+        <rect class="b9mHr" x="50" y="26" width="360" height="40" rx="7"/>
+        <text class="b9mHt" x="230" y="52" text-anchor="middle">RETRIEVAL · did we fetch the right context?</text>
+        <rect class="b9mHg" x="470" y="26" width="360" height="40" rx="7"/>
+        <text class="b9mHt" x="650" y="52" text-anchor="middle">GENERATION · did we answer well from it?</text>
+        <!-- retrieval cards -->
+        <rect class="b9mCard" x="50" y="82" width="360" height="66" rx="7"/>
+        <text class="b9mName" x="68" y="108">Hit rate</text>
+        <text class="b9mDesc" x="68" y="130">Is a relevant chunk anywhere in the top-k?</text>
+        <rect class="b9mCard" x="50" y="160" width="360" height="66" rx="7"/>
+        <text class="b9mName" x="68" y="186">Context precision</text>
+        <text class="b9mDesc" x="68" y="208">Are the top-ranked chunks the right ones? (ranking)</text>
+        <rect class="b9mCard" x="50" y="238" width="360" height="66" rx="7"/>
+        <text class="b9mName" x="68" y="264">Context recall</text>
+        <text class="b9mDesc" x="68" y="286">Did we retrieve everything the answer needs?</text>
+        <!-- generation cards -->
+        <rect class="b9mCard" x="470" y="82" width="360" height="66" rx="7"/>
+        <text class="b9mName" x="488" y="108">Faithfulness</text>
+        <text class="b9mDesc" x="488" y="130">Is every claim supported by the context? (hallucination)</text>
+        <rect class="b9mCard" x="470" y="160" width="360" height="66" rx="7"/>
+        <text class="b9mName" x="488" y="186">Answer relevancy</text>
+        <text class="b9mDesc" x="488" y="208">Is the answer on-topic for the question asked?</text>
+        <rect class="b9mCard" x="470" y="238" width="360" height="66" rx="7"/>
+        <text class="b9mName" x="488" y="264">Answer correctness</text>
+        <text class="b9mDesc" x="488" y="286">Does it match the ground-truth answer? (needs reference)</text>
+        <!-- diagnostic band -->
+        <path class="b9mArr" d="M 230 312 L 230 350"/>
+        <path class="b9mArr" d="M 650 312 L 650 350"/>
+        <text class="b9mDiag" x="230" y="372" text-anchor="middle">low recall → fix the retriever</text>
+        <text class="b9mDiag" x="230" y="390" text-anchor="middle">(chunking, search, top-k)</text>
+        <text class="b9mDiag" x="650" y="372" text-anchor="middle">low faithfulness → fix the generator</text>
+        <text class="b9mDiag" x="650" y="390" text-anchor="middle">(prompt, model, grounding)</text>
+        <rect x="50" y="406" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b9mN" x="74" y="418">Split the score into two families first - it tells you which half of the pipeline to touch.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the two metric families and what a low score in each is telling you</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The retrieval side: can it find the right context?<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Retrieval metrics judge the chunks you fetched, before the model writes a word. If these are bad, nothing downstream can save you - a perfect model over the wrong context still gives a wrong answer.</p>
+        <ul>
+          <li><strong>Hit rate.</strong> The blunt one: was a relevant chunk anywhere in the top-k? It ignores position. Great for a first pulse on the retriever.</li>
+          <li><strong>Context precision.</strong> Ranking quality - are the <em>most</em> relevant chunks ranked highest? A retriever that buries the right chunk at position 8 scores poorly here even if hit rate says "found it".</li>
+          <li><strong>Context recall.</strong> Completeness - of everything needed to answer, how much did we actually retrieve? This one needs a reference answer to know what "everything" was.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Hit rate + MRR (the LlamaIndex pair)</strong>
+          LlamaIndex's <code>RetrieverEvaluator</code> reports <strong>Hit Rate</strong> and <strong>MRR</strong> (mean reciprocal rank). MRR rewards ranking the relevant doc high: if the right chunk is always at position 1, MRR = 1.0; at position 2, each query contributes 1/2; and so on. Hit rate says "did we find it", MRR says "how near the top". Use both - they answer different questions about the same retriever.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The generation side: is the answer good and honest?<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Generation metrics judge the answer the model wrote, given the context it was handed. Two of them (faithfulness, relevancy) need no reference answer at all - a huge practical win.</p>
+        <ul>
+          <li><strong>Faithfulness.</strong> The anti-hallucination metric. RAGAS computes it as <em>supported claims / total claims</em>: it breaks the answer into claims and checks how many are backed by the retrieved context. 1.0 means every statement is grounded.</li>
+          <li><strong>Answer relevancy</strong> (RAGAS now calls it <strong>Response Relevancy</strong>). It generates questions <em>from</em> the answer and measures their mean cosine similarity to the real question. High = the answer stays on-topic. Note the trap: it measures on-topic-ness, <em>not</em> factual accuracy - a confident wrong answer can still be "relevant".</li>
+          <li><strong>Answer correctness.</strong> The one that needs a ground-truth answer: a blend of factual F1 (claims that match) and semantic similarity to the reference.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The relevancy false comfort.</strong> A team (anonymized) shipped a bot scoring 0.9 answer relevancy and celebrated - until users complained. The answers were beautifully on-topic and factually wrong. Relevancy was high because it only checks "is this about the question". Faithfulness was the metric that would have caught it, and it was sitting at 0.5. Never read relevancy as accuracy.</p>
+        </div>
+      </div>
+    </details>
+
+    <p class="lede" style="margin-top:22px">Here is the whole family on one card - what each measures and, crucially, the failure it catches:</p>
+    <table class="clean">
+      <thead>
+        <tr><th>Metric</th><th>What it measures</th><th>Failure it catches</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Hit rate</strong></td><td>A relevant chunk is somewhere in top-k</td><td>Retriever misses the answer entirely</td></tr>
+        <tr><td><strong>MRR</strong></td><td>How high the relevant chunk is ranked</td><td>Right chunk found but buried too low</td></tr>
+        <tr><td><strong>Context precision</strong></td><td>Ranking quality of retrieved chunks</td><td>Noise ranked above the good chunk</td></tr>
+        <tr><td><strong>Context recall</strong></td><td>Completeness vs the reference answer</td><td>Part of the answer was never retrieved</td></tr>
+        <tr><td><strong>Faithfulness</strong></td><td>Supported claims / total claims</td><td>Hallucination - claims not in the context</td></tr>
+        <tr><td><strong>Answer relevancy</strong></td><td>Answer stays on-topic for the question</td><td>Rambling, evasive, or off-topic answers</td></tr>
+        <tr><td><strong>Answer correctness</strong></td><td>Factual F1 + similarity to ground truth</td><td>Answer that is on-topic but simply wrong</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ PART 2: GOLDEN SET + RUNNING AN EVAL ============ -->
+  <section class="section" id="golden-set">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the golden set + a RAGAS-style run</span>
+      <h2>Building a golden set and running an eval <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">A metric is only as good as the questions you run it on. A <strong>golden set</strong> (reference set) is a small, curated list of questions - each with a reference answer and, ideally, the reference contexts that should have been retrieved. You do not need thousands. Twenty to fifty questions that cover your real usage, including the ones that failed, will move you faster than any benchmark. The flow is always the same: build the set, run the metrics, read the scorecard.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three stages left to right. Build a golden set of question, reference answer and reference contexts. Run metrics, some via LLM-as-judge and some needing the reference. Read the scorecard of metric scores.">
+        <style>
+          .b9eBox { fill: #F5F3FF; stroke: #6D28D9; stroke-width: 2; }
+          .b9eHead { font: 800 14px Inter, sans-serif; fill: #4C1D95; }
+          .b9eItem { font: 600 12px Inter, sans-serif; fill: #211B33; }
+          .b9eSub { font: 600 11px Inter, sans-serif; fill: #6E6685; }
+          .b9eArr { stroke: #8B5CF6; stroke-width: 3; fill: none; marker-end: url(#b9eAh); }
+          .b9eScoreBox { fill: #4C1D95; }
+          .b9eScoreT { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b9eScoreV { font: 800 12px Inter, sans-serif; fill: #A78BFA; }
+          .b9eN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b9eAh" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <!-- stage 1 -->
+        <rect class="b9eBox" x="30" y="40" width="230" height="190" rx="9"/>
+        <text class="b9eHead" x="45" y="68">1 · Build golden set</text>
+        <text class="b9eItem" x="45" y="98">• question</text>
+        <text class="b9eItem" x="45" y="122">• reference answer</text>
+        <text class="b9eItem" x="45" y="146">• reference contexts</text>
+        <text class="b9eSub" x="45" y="176">20-50 real questions,</text>
+        <text class="b9eSub" x="45" y="194">including your failures</text>
+        <path class="b9eArr" d="M 268 135 L 315 135"/>
+        <!-- stage 2 -->
+        <rect class="b9eBox" x="325" y="40" width="230" height="190" rx="9"/>
+        <text class="b9eHead" x="340" y="68">2 · Run metrics</text>
+        <text class="b9eItem" x="340" y="98">LLM-as-judge:</text>
+        <text class="b9eSub" x="340" y="118">faithfulness, relevancy</text>
+        <text class="b9eItem" x="340" y="146">needs reference:</text>
+        <text class="b9eSub" x="340" y="166">recall, correctness</text>
+        <text class="b9eSub" x="340" y="200">one judge model scores each</text>
+        <path class="b9eArr" d="M 563 135 L 610 135"/>
+        <!-- stage 3 scorecard -->
+        <rect class="b9eBox" x="620" y="40" width="230" height="190" rx="9"/>
+        <text class="b9eHead" x="635" y="68">3 · Read scorecard</text>
+        <rect class="b9eScoreBox" x="635" y="82" width="200" height="26" rx="5"/>
+        <text class="b9eScoreT" x="645" y="100">faithfulness</text>
+        <text class="b9eScoreV" x="815" y="100" text-anchor="end">0.91</text>
+        <rect class="b9eScoreBox" x="635" y="114" width="200" height="26" rx="5"/>
+        <text class="b9eScoreT" x="645" y="132">answer relevancy</text>
+        <text class="b9eScoreV" x="815" y="132" text-anchor="end">0.88</text>
+        <rect class="b9eScoreBox" x="635" y="146" width="200" height="26" rx="5"/>
+        <text class="b9eScoreT" x="645" y="164">context precision</text>
+        <text class="b9eScoreV" x="815" y="164" text-anchor="end">0.79</text>
+        <rect class="b9eScoreBox" x="635" y="178" width="200" height="26" rx="5"/>
+        <text class="b9eScoreT" x="645" y="196">context recall</text>
+        <text class="b9eScoreV" x="815" y="196" text-anchor="end">0.42</text>
+        <text class="b9eSub" x="635" y="222">recall is your bottleneck</text>
+        <rect x="30" y="284" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b9eN" x="54" y="296">Build once, run on every change. The scorecard is the diff between "before" and "after".</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - build the golden set, run the metrics, read the scorecard</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>A RAGAS-style eval, end to end<span class="mini">4 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>RAGAS wraps all of these metrics behind one <code>evaluate()</code> call. You assemble a small dataset - question, the answer Recall produced, the contexts it retrieved, and the ground-truth answer - then pass the metrics you care about. Faithfulness and answer relevancy work without ground truth; context recall and correctness use it.</p>
+        <div class="prompt-box good"><span class="label">Python · a RAGAS-style eval over Recall's golden set</span>from datasets import Dataset
+from ragas import evaluate
+from ragas.metrics import (
+    faithfulness,          # supported claims / total claims (LLM-as-judge)
+    answer_relevancy,      # a.k.a. response relevancy - on-topic, not accuracy
+    context_precision,     # ranking quality of retrieved chunks
+    context_recall,        # completeness - REQUIRES ground_truth
+)
+
+# one row per golden-set question. answer + contexts come from Recall;
+# ground_truth is the reference answer you wrote by hand.
+data = {
+    "question": [
+        "How do I get a refund?",
+        "What is the duplicate-charge policy?",
+    ],
+    "answer": [        # what Recall generated
+        "Refunds go to the original payment method in 5-7 business days.",
+        "Duplicate authorization holds drop off automatically within 3 days.",
+    ],
+    "contexts": [      # the chunks Recall retrieved (list per question)
+        ["Refunds are issued to the original payment method within 5-7 business days."],
+        ["A duplicate authorization hold is released automatically within 72 hours."],
+    ],
+    "ground_truth": [  # your reference answers
+        "Refunds are returned to the original payment method within 5-7 business days.",
+        "Duplicate authorization holds are released automatically within 72 hours.",
+    ],
+}
+
+dataset = Dataset.from_dict(data)
+
+result = evaluate(
+    dataset,
+    metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+    # llm=... a judge model such as gpt-4o-mini or a Claude model powers
+    # claim extraction, verification, and question generation under the hood.
+)
+print(result)
+# -&gt; {'faithfulness': 0.91, 'answer_relevancy': 0.88,
+#     'context_precision': 0.79, 'context_recall': 0.42}</div>
+        <p>Read that last line the way a mechanic reads a dashboard. Faithfulness and relevancy are healthy - the generator is doing its job. Context recall at 0.42 is the alarm: the retriever is leaving out chunks the answers needed. You now know exactly where to spend the next hour, and you never had to guess.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Which metrics need a reference, which are self-judging<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This distinction decides how much labelling work you sign up for, so hold it clearly:</p>
+        <ul>
+          <li><strong>Need a reference answer / ground truth:</strong> context recall, answer correctness, and reference-based context precision. These compare against something you wrote by hand - more work to build, but they measure completeness and correctness that self-judging metrics cannot.</li>
+          <li><strong>LLM-as-judge only (no reference):</strong> faithfulness and answer relevancy. A judge model extracts and verifies claims, or generates questions from the answer, and scores from that alone. Cheap to run on every query - even in production.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The LLM-as-judge, demystified</strong>
+          Most of these scores are not hand-computed - a judge model (e.g. <code>gpt-4o-mini</code> or a Claude model) does the reading. For faithfulness it extracts the answer's claims and checks each against the context. For relevancy it generates plausible questions from the answer and compares them to the real one. The judge is a model grading a model. It is not perfect, but it is consistent and fast, which is what makes eval-on-every-change affordable.
+        </div>
+        <div class="callout tip">
+          <strong>Practice: vibe check first, then component-wise</strong>
+          Run an <strong>end-to-end vibe check</strong> before you reach for the microscope - eyeball ten answers, get a feel for whether the system is broadly working. Only then go <strong>component-wise</strong>: split retrieval from generation and read the individual metrics to localize the fault. Skipping the vibe check wastes time optimizing a metric while a gross bug hides in plain sight.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · score Recall</span>
+      <h2>Turn your failures into a golden set <span class="tag demo">★ 12 min</span></h2>
+    </div>
+    <p class="lede">Back in b1 you saved three queries where retrieval returned the wrong chunk, and in b4 you collected more failures while tuning the retriever. Those failures are the most valuable eval questions you own - they are exactly where Recall is weak. Turn them into a golden set and score them.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Gather your failures.</strong> Pull the three failing queries from b1 and any from b4. For each, write the question, the correct reference answer (by hand), and the chunk(s) that <em>should</em> have been retrieved.</p></div>
+      <div class="step"><p><strong>Run Recall on them.</strong> For each question, capture what Recall actually generated and the contexts it actually retrieved. This is your <code>answer</code> and <code>contexts</code> columns.</p></div>
+      <div class="step"><p><strong>Score it.</strong> Run the RAGAS-style eval with faithfulness, answer relevancy, context precision, and context recall. Do the end-to-end vibe check first, then read the numbers.</p></div>
+      <div class="step"><p><strong>Diagnose.</strong> In one line per failure: is this a retriever problem (low recall/precision) or a generator problem (low faithfulness)? Now you know what to fix - and you have proof, not a hunch.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b9</strong>
+      Recall now has a scorecard. Its failures are named questions with reference answers, and every future change can be judged: did faithfulness climb, did context recall move? In b10 - the final session - we take Recall to production: freshness, caching, latency, monitoring, and cost, then hand it off to LangChain.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b10 <span class="tag exercise">◐ 45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Grow your golden set to at least 15 questions that cover Recall's real usage, not just the failures. Include a few you are confident it answers well - a good eval set has passes too.</li>
+      <li>Add LlamaIndex's <code>RetrieverEvaluator</code> to your run and record Hit Rate and MRR for the retriever alone. Compare MRR before and after the reranker you added in b5.</li>
+      <li>Deliberately break something - drop your top-k to 1, or disable the reranker - re-run the eval, and watch which metric moves. Confirm the metric points at the part you broke.</li>
+      <li>Read: the RAGAS metrics docs (faithfulness, response relevancy, context precision/recall) and LlamaIndex's retrieval evaluation guide. Skim OpenAI's "Evaluate RAG" cookbook for the eval-loop framing.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from the RAGAS and LlamaIndex evaluation docs plus OpenAI's cookbook. This page covers ~80% of their working content on RAG metrics - the rest (hosted dashboards, paid keys) stays with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">RAGAS · metrics reference</span><span class="note">Part 1-2 · faithfulness = supported/total claims · response (answer) relevancy · context precision + recall · which need a reference</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">LlamaIndex · evaluation (RetrieverEvaluator)</span><span class="note">Part 1 · Hit Rate + MRR for the retriever in isolation</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">OpenAI cookbook · Evaluate RAG</span><span class="note">Part 2 · the golden-set + eval-loop framing; LLM-as-judge scoring</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · Your RAG answer is wrong. Faithfulness is high (0.95) but context recall is low (0.4). What is the most likely problem?</p>
+      <button class="qopt" type="button">A · The model is hallucinating - fix the prompt</button>
+      <button class="qopt" type="button">B · The retriever is missing needed chunks - fix chunking or search</button>
+      <button class="qopt" type="button">C · The embedding model is too small</button>
+      <p class="qwhy">High faithfulness means the answer is faithful to the context it got; low context recall means the retriever didn't fetch everything needed. That points at the retriever, not the generator.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · In RAGAS, faithfulness is computed as...</p>
+      <button class="qopt" type="button">A · Cosine similarity between the answer and the question</button>
+      <button class="qopt" type="button">B · The percentage of retrieved chunks that were relevant</button>
+      <button class="qopt" type="button">C · Supported claims divided by total claims in the answer</button>
+      <p class="qwhy">RAGAS faithfulness breaks the answer into claims and measures how many are supported by the retrieved context - it is the anti-hallucination metric.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Which metric does NOT require a reference answer / ground truth?</p>
+      <button class="qopt" type="button">A · Answer relevancy (response relevancy)</button>
+      <button class="qopt" type="button">B · Context recall</button>
+      <button class="qopt" type="button">C · Answer correctness</button>
+      <p class="qwhy">Answer relevancy is self-judging - it generates questions from the answer and compares to the real one, no reference needed. Context recall and answer correctness both require ground truth.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 9 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Two families</b><span>Retrieval metrics (did we fetch right?) vs generation metrics (did we answer well?). Split first.</span></div>
+      <div class="cheat-item"><b>Diagnosis</b><span>Low recall → fix retriever. Low faithfulness → fix generator. The scorecard names the culprit.</span></div>
+      <div class="cheat-item"><b>Faithfulness</b><span>Supported claims / total claims. The anti-hallucination metric. No reference needed.</span></div>
+      <div class="cheat-item"><b>Answer relevancy</b><span>On-topic-ness via generated questions. NOT accuracy. RAGAS renamed it response relevancy.</span></div>
+      <div class="cheat-item"><b>Context precision / recall</b><span>Precision = ranking quality. Recall = completeness (needs a reference answer).</span></div>
+      <div class="cheat-item"><b>Hit rate + MRR</b><span>LlamaIndex RetrieverEvaluator. Hit rate = found it. MRR = how near the top (1.0 = always first).</span></div>
+      <div class="cheat-item"><b>Golden set</b><span>20-50 real questions + reference answers/contexts. Build from failures. Run on every change.</span></div>
+      <div class="cheat-item"><b>Practice</b><span>End-to-end vibe check first, then component-wise. LLM-as-judge powers the scoring.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 9 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b8-full-pipeline.html">← Prev: The full pipeline</a> &nbsp;·&nbsp; <a href="b10-production.html">Next: Production RAG →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

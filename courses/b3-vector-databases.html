@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 3 · Vector databases - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 3 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 3 of 10</div>
+    <h1>Vector databases: <span class="accent">where Recall's chunks live</span></h1>
+    <p class="sub">In b2 Recall learned to cut documents into clean chunks - but those chunks and their vectors were sitting in a Python list, gone the moment the process exits. A real assistant needs a store: something that persists vectors, indexes them so search stays fast as they grow into the millions, and filters by metadata. Today Recall gets that home. We learn Chroma end to end, then meet pgvector and FAISS as the same idea in different houses, and finally look under the hood at the three index types - flat, IVF, and HNSW - that decide the speed-versus-memory trade every vector store makes.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Builder track</span>
+      <span class="chip audience">Practitioners · real Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:3">3-20 · Chroma</span>
+      <span class="a3" style="flex:5">20-40 · pgvector, FAISS, indexes</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>From a Python list to a real store</h2>
+    </div>
+    <p class="lede">You can build a working retriever with a list of vectors and a loop that computes cosine similarity - that is exactly what b1 did. It even scales to a few thousand chunks. But the moment you want persistence across restarts, sub-second search over millions of chunks, and the ability to filter by "only board notes from Q3", you need a vector database. The good news: they all wrap the same embed-and-rank idea you already understand. We start with the one that is easiest to run.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      Recall's first real store: a Chroma collection you can create, add documents to, and query - with metadata filters - in a handful of lines. Plus the working knowledge to reach for pgvector when you already run Postgres, FAISS when you want raw in-process speed, and the right index type for the scale you are at.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: CHROMA ============ -->
+  <section class="section" id="chroma">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the vector-store lifecycle in Chroma</span>
+      <h2>Chroma, end to end <span class="tag concept">10 min live</span></h2>
+    </div>
+    <p class="lede">Chroma is the friendliest place to start because it runs locally with one <code>pip install</code>, embeds your text for you, and persists to disk automatically. The whole lifecycle is four moves: create a client, create a collection, add documents, query. Learn these four and you understand every vector database - the others just change the words.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The Chroma store lifecycle in four steps: create a client, create a collection, add documents with metadata and ids which embeds automatically, then query with text and an optional where filter">
+        <style>
+          .b3cBox { rx: 8; }
+          .b3cT { font: 700 13.5px Inter, sans-serif; fill: #FFFFFF; }
+          .b3cSub { font: 600 11.5px Inter, sans-serif; fill: #A78BFA; }
+          .b3cTi { font: 700 13.5px Inter, sans-serif; fill: #211B33; }
+          .b3cSubI { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b3cArr { stroke: #C7C0DA; stroke-width: 2.5; marker-end: url(#b3cAh); fill: none; }
+          .b3cN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b3cAh" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#C7C0DA"/></marker>
+        </defs>
+        <rect class="b3cBox" x="20" y="90" width="180" height="70" fill="#4C1D95"/>
+        <text class="b3cT" x="110" y="120" text-anchor="middle">1 · Client</text>
+        <text class="b3cSub" x="110" y="140" text-anchor="middle">PersistentClient(path)</text>
+        <path class="b3cArr" d="M 205 125 L 245 125"/>
+        <rect class="b3cBox" x="250" y="90" width="180" height="70" fill="#6D28D9"/>
+        <text class="b3cT" x="340" y="120" text-anchor="middle">2 · Collection</text>
+        <text class="b3cSub" x="340" y="140" text-anchor="middle">get_or_create</text>
+        <path class="b3cArr" d="M 435 125 L 475 125"/>
+        <rect class="b3cBox" x="480" y="90" width="180" height="70" fill="#8B5CF6"/>
+        <text class="b3cT" x="570" y="116" text-anchor="middle">3 · add()</text>
+        <text class="b3cSub" x="570" y="134" text-anchor="middle">docs · metadata · ids</text>
+        <text class="b3cSub" x="570" y="150" text-anchor="middle">embeds automatically</text>
+        <path class="b3cArr" d="M 665 125 L 705 125"/>
+        <rect class="b3cBox" x="700" y="90" width="160" height="70" fill="#A78BFA"/>
+        <text class="b3cTi" x="780" y="116" text-anchor="middle">4 · query()</text>
+        <text class="b3cSubI" x="780" y="134" text-anchor="middle">text · n_results</text>
+        <text class="b3cSubI" x="780" y="150" text-anchor="middle">where filter</text>
+        <rect x="20" y="230" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b3cN" x="44" y="242">Client → collection → add → query. Every vector store is a dialect of these four moves.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the four-move lifecycle of a Chroma store</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The whole store in a dozen lines<span class="mini">5 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is Recall's store, from empty to answering a filtered query. Note the two client choices: <code>PersistentClient</code> writes to disk so your vectors survive a restart, while <code>chromadb.Client()</code> is in-memory and vanishes when the process ends.</p>
+        <div class="prompt-box good"><span class="label">Python · create, add, and query a Chroma collection</span>import chromadb
+
+# persists to disk automatically; chromadb.Client() is in-memory only
+client = chromadb.PersistentClient(path="./recall_db")
+
+collection = client.get_or_create_collection(name="md_notes")
+
+collection.add(
+    ids=["A1", "A2"],
+    documents=["MD committed to a 3-year cloud spend cap.",
+               "MD prefers an aisle seat on all flights."],
+    metadatas=[{"source": "board"}, {"source": "travel"}],
+)
+
+results = collection.query(
+    query_texts=["cloud spend commitment"],
+    n_results=3,
+    where={"source": "board"},   # metadata filter
+)
+print(results["documents"])</div>
+        <p>Chroma embeds both your documents and your query for you with a built-in model, so you never call an embedding API by hand here - though you can plug in your own. The <code>ids</code> let you update or delete specific chunks later; the <code>metadatas</code> are what make the <code>where</code> filter possible.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Metadata filters: retrieval with a WHERE clause<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Real corpora are not flat. You want "the answer, but only from board notes" or "only incidents marked SEV1". Chroma's <code>where</code> filter narrows the search to matching metadata before ranking by similarity - the same instinct as a SQL <code>WHERE</code>, applied to vector search.</p>
+        <ul>
+          <li><strong>Operators.</strong> Chroma's <code>where</code> supports <code>$eq $ne $gt $gte $lt $lte $and $or $in $nin $contains $not_contains</code> - enough to express most real filters.</li>
+          <li><strong>Filter first, rank second.</strong> The filter prunes the candidate set, then similarity ranks what survives. This is faster and more precise than ranking everything and filtering after.</li>
+          <li><strong>Metadata is a design choice.</strong> Whatever you might want to filter on later - source, date, author, severity - attach it at <code>add()</code> time. You cannot filter on what you did not store.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>This is why b2's chunking carried metadata</strong>
+          When you chunked the MD notes, each chunk kept its source tag. That was not decoration - it is what lets Recall answer "what did the board decide?" without dredging up travel notes. Chunk shape and metadata are two halves of the same design.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Update and delete: a store is not write-once<span class="mini">3 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Corpora change - notes get corrected, incidents get resolved, pages get rewritten. Because every chunk went in with a stable <code>id</code>, Chroma lets you revise the store in place rather than rebuilding it from scratch.</p>
+        <div class="prompt-box good"><span class="label">Python · upsert a changed chunk and remove a stale one</span>collection.upsert(
+    ids=["A1"],
+    documents=["MD raised the cloud spend cap to a 4-year commitment."],
+    metadatas=[{"source": "board"}],
+)   # re-embeds and replaces the chunk with id A1
+
+collection.delete(ids=["A2"])   # drop a chunk that no longer applies
+
+print(collection.count())       # how many chunks are in the store now</div>
+        <p>This is why <code>id</code> discipline matters from day one. If your chunk ids are derived from something stable - a document id plus a chunk index, say - then re-ingesting an updated document cleanly overwrites its old chunks instead of leaving duplicates behind. Sloppy ids are how stores quietly fill with stale answers.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: PGVECTOR + FAISS + INDEXES ============ -->
+  <section class="section" id="others">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers pgvector, FAISS, and the three index types</span>
+      <h2>pgvector and FAISS - same idea, different homes <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">Chroma is one house for your vectors. Two others come up constantly: pgvector, when you already run PostgreSQL and want vectors to live beside your relational data, and FAISS, when you want raw in-process speed and full control. The vectors and the cosine ranking are identical; what changes is where they live and how they are indexed.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three approximate-nearest-neighbor index types compared: Flat does an exact linear scan of every vector, IVF trains cluster cells and probes a few, HNSW builds a navigable graph that is fastest but uses the most memory">
+        <style>
+          .b3iCard { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; rx: 8; }
+          .b3iH { font: 800 15px Inter, sans-serif; fill: #4C1D95; }
+          .b3iL { font: 600 12px Inter, sans-serif; fill: #211B33; }
+          .b3iG { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b3iDot { fill: #8B5CF6; }
+          .b3iQ { fill: #C6961A; }
+          .b3iEdge { stroke: #A78BFA; stroke-width: 1.2; }
+          .b3iN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <!-- Flat -->
+        <rect class="b3iCard" x="20" y="40" width="260" height="220"/>
+        <text class="b3iH" x="40" y="70">Flat</text>
+        <text class="b3iG" x="40" y="90">exact · linear scan</text>
+        <circle class="b3iDot" cx="70" cy="130" r="6"/><circle class="b3iDot" cx="110" cy="150" r="6"/><circle class="b3iDot" cx="150" cy="125" r="6"/><circle class="b3iDot" cx="190" cy="160" r="6"/><circle class="b3iDot" cx="230" cy="135" r="6"/><circle class="b3iDot" cx="90" cy="185" r="6"/><circle class="b3iDot" cx="160" cy="195" r="6"/><circle class="b3iDot" cx="215" cy="185" r="6"/>
+        <circle class="b3iQ" cx="150" cy="160" r="8"/>
+        <text class="b3iL" x="40" y="235">Checks every vector.</text>
+        <text class="b3iG" x="40" y="252">Minimal memory, no training.</text>
+        <!-- IVF -->
+        <rect class="b3iCard" x="300" y="40" width="260" height="220"/>
+        <text class="b3iH" x="320" y="70">IVF</text>
+        <text class="b3iG" x="320" y="90">train cells · probe a few</text>
+        <ellipse cx="370" cy="140" rx="34" ry="30" fill="none" class="b3iEdge"/>
+        <ellipse cx="470" cy="150" rx="38" ry="34" fill="none" class="b3iEdge"/>
+        <ellipse cx="410" cy="200" rx="30" ry="26" fill="none" class="b3iEdge"/>
+        <circle class="b3iDot" cx="360" cy="135" r="5"/><circle class="b3iDot" cx="380" cy="150" r="5"/><circle class="b3iDot" cx="470" cy="145" r="5"/><circle class="b3iDot" cx="480" cy="160" r="5"/><circle class="b3iDot" cx="405" cy="200" r="5"/>
+        <circle class="b3iQ" cx="470" cy="150" r="8"/>
+        <text class="b3iL" x="320" y="235">Searches nearest cells only.</text>
+        <text class="b3iG" x="320" y="252">Lower memory, must train.</text>
+        <!-- HNSW -->
+        <rect class="b3iCard" x="580" y="40" width="280" height="220"/>
+        <text class="b3iH" x="600" y="70">HNSW</text>
+        <text class="b3iG" x="600" y="90">graph · fast · high memory</text>
+        <line class="b3iEdge" x1="640" y1="130" x2="700" y2="150"/><line class="b3iEdge" x1="700" y1="150" x2="770" y2="135"/><line class="b3iEdge" x1="700" y1="150" x2="720" y2="200"/><line class="b3iEdge" x1="640" y1="130" x2="660" y2="185"/><line class="b3iEdge" x1="770" y1="135" x2="800" y2="185"/><line class="b3iEdge" x1="720" y1="200" x2="800" y2="185"/>
+        <circle class="b3iDot" cx="640" cy="130" r="6"/><circle class="b3iDot" cx="770" cy="135" r="6"/><circle class="b3iDot" cx="720" cy="200" r="6"/><circle class="b3iDot" cx="660" cy="185" r="6"/><circle class="b3iDot" cx="800" cy="185" r="6"/>
+        <circle class="b3iQ" cx="700" cy="150" r="8"/>
+        <text class="b3iL" x="600" y="235">Hops along a graph to neighbors.</text>
+        <text class="b3iG" x="600" y="252">Best recall + speed, no training.</text>
+        <rect x="20" y="300" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b3iN" x="44" y="312">Gold dot = the query. Flat is exact; IVF and HNSW are approximate - they trade a little recall for a lot of speed.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - Flat, IVF, and HNSW: the three ways to index vectors for search</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>pgvector: vectors as a Postgres column<span class="mini">4 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>pgvector adds a <code>vector</code> type to PostgreSQL, so your embeddings become just another column - queryable with SQL, joinable with your existing tables, backed up with your existing database. If you already run Postgres, this is often the lowest-friction store you can pick.</p>
+        <div class="prompt-box good"><span class="label">SQL · enable pgvector, index with HNSW, query by cosine</span>CREATE EXTENSION vector;
+
+CREATE TABLE items (
+    id        bigserial PRIMARY KEY,
+    embedding vector(1536)
+);
+
+-- build an HNSW index using the cosine opclass
+CREATE INDEX ON items USING hnsw (embedding vector_cosine_ops);
+
+-- &lt;=&gt; is the cosine distance operator
+SELECT * FROM items
+ORDER BY embedding &lt;=&gt; '[...]'
+LIMIT 5;</div>
+        <p>The operators encode the distance metric: <code>&lt;-&gt;</code> is L2, <code>&lt;=&gt;</code> is cosine, <code>&lt;#&gt;</code> is negative inner product, and <code>&lt;+&gt;</code> is L1. One rule trips everyone up: the index opclass must match the operator you query with - <code>vector_cosine_ops</code> goes with <code>&lt;=&gt;</code>. Mismatch them and Postgres quietly ignores your index and scans the whole table.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>FAISS: raw speed, in your process<span class="mini">4 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>FAISS is a library, not a server - it holds vectors in memory and searches them extremely fast, right inside your Python process. It is the tool when you want maximum control and speed and are willing to manage persistence and metadata yourself.</p>
+        <div class="prompt-box good"><span class="label">Python · build a flat FAISS index and search it</span>import faiss
+
+index = faiss.IndexFlatL2(d)   # exact search, no training needed
+index.add(xb)                  # xb: (n, d) matrix of document vectors
+
+D, I = index.search(xq, k)     # xq: query vectors, k: neighbors
+# I = integer ids of the nearest vectors, D = their distances</div>
+        <p>Swap the index class to change the trade-off: <code>IndexIVFFlat</code> needs <code>.train()</code> on sample data before <code>.add()</code>, and its <code>nprobe</code> setting tunes speed against accuracy; <code>IndexHNSWFlat</code> is the graph index and needs no training. One catch to design around: FAISS returns integer ids only - it stores no documents or metadata, so you keep a side table mapping ids back to your chunks.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Choosing a store, and choosing an index<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two decisions, made in order. First, the store:</p>
+        <ul>
+          <li><strong>Chroma</strong> - starting out, prototyping, or you want batteries-included with automatic embedding and metadata. Recall's choice.</li>
+          <li><strong>pgvector</strong> - you already run Postgres and want vectors beside relational data, one backup, one set of ops.</li>
+          <li><strong>FAISS</strong> - you want the fastest in-process search and full control, and can manage persistence and metadata yourself.</li>
+        </ul>
+        <p>Then, the index type inside whichever store:</p>
+        <ul>
+          <li><strong>Flat</strong> - exact, minimal memory, linear scan. Perfect up to tens of thousands of vectors.</li>
+          <li><strong>IVF</strong> - lower memory, but you must train it on your data first. Good middle ground at larger scale.</li>
+          <li><strong>HNSW</strong> - fastest queries and best recall, no training, but the highest memory use. The common default when scale and latency matter.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Exact vs approximate</strong>
+          Flat is exact - it truly checks every vector. IVF and HNSW are approximate-nearest-neighbor (ANN) indexes: they skip most vectors and accept a tiny chance of missing the true best match in exchange for enormous speedups. At millions of vectors that trade is not optional, it is the only way search stays fast.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>★ Reinforce: a query still returns ranked chunks<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Whichever store and index you pick, the thing you get back is unchanged from b1: a ranked list of chunks. Run a query against Recall's Corpus A and hold that in mind - Chroma's <code>query()</code>, pgvector's <code>ORDER BY ... LIMIT</code>, and FAISS's <code>search()</code> all produce exactly this shape.</p>
+        <div class="ragbox" data-corpus="A" data-k="3"
+             data-caption="Try: 'cloud spend cap' or 'flight seat' - the store's job is to return these ranked chunks fast and at scale."></div>
+        <div class="callout tip">
+          <strong>Honesty note - what this playground really does</strong>
+          To run with zero network calls, this tool uses a <em>simplified</em> embedding: term frequency over a small vocabulary plus a synonym map, and the same function embeds both the documents and your query. Real embedding models are neural and far richer, and a real vector database would index these vectors with HNSW or IVF rather than scanning them. But the ranking math - cosine similarity over vectors - is exactly what production RAG uses. Only the embedder is simplified; the retrieval mechanic is real.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · stand up Recall's store</span>
+      <h2>Run Chroma locally and query it <span class="tag demo">★ 12 min</span></h2>
+    </div>
+    <p class="lede">Time to put Recall's chunks in a real store. This runs on your laptop with one install - no server, no API key.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Install and create.</strong> <code>pip install chromadb</code>, then create a <code>PersistentClient(path="./recall_db")</code> and a <code>get_or_create_collection("md_notes")</code>.</p></div>
+      <div class="step"><p><strong>Add Corpus-A-like notes.</strong> Write six short notes of your own - a couple about "board decisions", a couple about "travel", a couple about "people". Give each an <code>id</code> and a <code>{"source": ...}</code> metadata tag, and <code>add()</code> them.</p></div>
+      <div class="step"><p><strong>Query with and without a filter.</strong> Run the same query twice: once plain, once with <code>where={"source": "board"}</code>. Confirm the filter changes which chunks come back.</p></div>
+      <div class="step"><p><strong>Prove persistence.</strong> Restart Python, re-open the same client and collection, and query again without re-adding. Your vectors are still there - that is what a store buys you.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b4 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Load one of the chunked documents from b2 into your Chroma collection, keeping the source metadata on each chunk. Query it and confirm the right chunk plus the right filter behave together.</li>
+      <li>Read the pgvector README section on operators and opclasses. Write down which operator and opclass you would pair for cosine search - the b3 quiz will ask.</li>
+      <li>Skim the FAISS wiki page on index types. Note why <code>IndexIVFFlat</code> needs training and <code>IndexHNSWFlat</code> does not.</li>
+      <li>Keep your Chroma collection - in b4 we build the full retrieve-and-generate loop on top of it.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from official docs. This page covers ~80% of their working content on getting started, indexing, and querying - the rest (hosted/cloud tiers, sharding, tuning) stays with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Chroma · Docs (getting started)</span><span class="note">Part 1 · PersistentClient vs in-memory · get_or_create_collection · add · query · where operators</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">pgvector · README</span><span class="note">Part 2 · vector type · HNSW index · distance operators &lt;-&gt; &lt;=&gt; &lt;#&gt; &lt;+&gt; · opclass must match operator</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">FAISS · Wiki</span><span class="note">Part 2 · IndexFlatL2 · IndexIVFFlat train + nprobe · IndexHNSWFlat · integer-id-only results</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Weaviate · Vector Index (ANN concepts)</span><span class="note">Part 2 · exact vs approximate · HNSW graph intuition · the recall/speed/memory trade</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · In Chroma, what is the difference between PersistentClient and chromadb.Client()?</p>
+      <button class="qopt" type="button">A · PersistentClient is faster; Client() is more accurate</button>
+      <button class="qopt" type="button">B · PersistentClient writes to disk so vectors survive a restart; Client() is in-memory and vanishes when the process ends</button>
+      <button class="qopt" type="button">C · There is no difference; they are aliases</button>
+      <p class="qwhy">PersistentClient(path=...) persists to disk automatically. chromadb.Client() keeps everything in memory only, so it is lost on exit.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · In pgvector, which operator ranks by cosine distance - and what must match it?</p>
+      <button class="qopt" type="button">A · &lt;-&gt;, matched by vector_l1_ops</button>
+      <button class="qopt" type="button">B · &lt;#&gt;, matched by vector_cosine_ops</button>
+      <button class="qopt" type="button">C · &lt;=&gt;, and the index opclass must be vector_cosine_ops</button>
+      <p class="qwhy">&lt;=&gt; is the cosine distance operator. The index opclass (vector_cosine_ops) must match it, or Postgres ignores the index.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Which index type is fastest with the best recall, but uses the most memory and needs no training?</p>
+      <button class="qopt" type="button">A · HNSW (a navigable graph)</button>
+      <button class="qopt" type="button">B · IVF (trained cluster cells)</button>
+      <button class="qopt" type="button">C · Flat (exact linear scan)</button>
+      <p class="qwhy">HNSW gives the fastest queries and best recall with no training, at the cost of high memory. IVF is lower-memory but must train; Flat is exact but linear.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 3 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Why a vector DB</b><span>Persistence, fast search at millions of vectors, and metadata filtering. Wraps b1's embed-and-rank.</span></div>
+      <div class="cheat-item"><b>Chroma lifecycle</b><span>Client → get_or_create_collection → add(docs, metadatas, ids) → query(text, n_results, where).</span></div>
+      <div class="cheat-item"><b>Persistent vs in-memory</b><span>PersistentClient(path) survives restarts; chromadb.Client() is memory-only.</span></div>
+      <div class="cheat-item"><b>Chroma where operators</b><span>$eq $ne $gt $gte $lt $lte $and $or $in $nin $contains $not_contains. Filter first, rank second.</span></div>
+      <div class="cheat-item"><b>pgvector</b><span>vector(1536) column; HNSW index; operators &lt;-&gt; L2, &lt;=&gt; cosine, &lt;#&gt; neg inner, &lt;+&gt; L1. Opclass must match.</span></div>
+      <div class="cheat-item"><b>FAISS</b><span>In-process. IndexFlatL2 (exact), IndexIVFFlat (train + nprobe), IndexHNSWFlat (graph). Integer ids only.</span></div>
+      <div class="cheat-item"><b>Index types</b><span>Flat = exact/min memory; IVF = trained/lower memory; HNSW = fastest/best recall/high memory.</span></div>
+      <div class="cheat-item"><b>Exact vs ANN</b><span>Flat is exact. IVF and HNSW are approximate - trade a little recall for big speed at scale.</span></div>
+    </div>
+  </section>
+
+  <div class="callout win">
+    <strong>★ Recall's status after b3</strong>
+    Recall now has a real home: a Chroma collection that persists its chunks, indexes them for fast search, and filters by metadata. It is no longer a script that forgets everything on exit - it is a store you can query. In b4 we close the loop: take a retrieved chunk, hand it to a language model, and turn retrieval into an actual answer.
+  </div>
+
+  <footer class="pagefoot">
+    <span>Builder session 3 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b2-chunking.html">← Prev: Chunking strategies</a> &nbsp;·&nbsp; <a href="b4-retrieval-basics.html">Next: Retrieval basics →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

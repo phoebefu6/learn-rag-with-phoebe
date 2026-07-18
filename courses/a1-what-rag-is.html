@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 1 · What RAG is, and why it beats a bigger prompt - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Leader session 1 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Leader track · Session 1 of 6</div>
+    <h1>What RAG is, <span class="accent">and why it beats a bigger prompt</span></h1>
+    <p class="sub">Every vendor now says their product "uses your data with AI". This session gives you the one mental model that lets you tell the real thing from the demo: retrieval-augmented generation - fetch the few relevant passages, hand them to the model, and make it answer from them with a citation. By the end you can say what RAG is in one breath, tell when it beats fine-tuning or a giant prompt, and spot the moment a team is reaching for the wrong tool.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Leader track</span>
+      <span class="chip audience">Leaders: C-level · managers · curious minds</span>
+      <span class="chip audience">No code, ever</span>
+      <span class="chip time">Start here</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Concepts</span>
+      <span class="a3" style="flex:4">20-40 · Exercises</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why this hour is worth your calendar</h2>
+    </div>
+    <p class="lede">An LLM on its own is a brilliant colleague with no access to your files and a habit of answering confidently even when it is guessing. RAG is the fix the whole industry converged on: instead of retraining the model or pasting your entire drive into the prompt, you <strong>retrieve</strong> the handful of passages that actually bear on the question and let the model answer from those. It is cheaper than fine-tuning, more current than the model's training data, and - done right - it can cite its sources and admit when it does not know. That last part is why leaders care: RAG is the difference between an assistant that sounds right and one you can audit.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Try it now prompt</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A one-breath definition of RAG you can use in a board meeting, a three-doors decision (RAG vs fine-tuning vs a bigger prompt) that sorts any "use our data with AI" idea, the two-question screen for whether RAG actually pays off, and five questions to put to your data team this week.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: WHAT RAG IS ============ -->
+  <section class="section" id="what-rag-is">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the retrieve-augment-generate idea</span>
+      <h2>Retrieve, augment, generate <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">RAG is three moves in a row, and the names say exactly what happens. The model never sees your whole knowledge base - it sees the few passages a search step pulled for this one question. The picture below is the entire concept.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RAG flow: a question goes to a retriever that searches your documents, the top passages plus the question form an augmented prompt, and the model generates a grounded, cited answer">
+        <style>
+          .r1aT { font: 700 15px Inter, sans-serif; fill: #FFFFFF; }
+          .r1aI { font: 700 14px Inter, sans-serif; fill: #211B33; }
+          .r1aW { font: 400 12.5px Inter, sans-serif; fill: #EDE9FB; }
+          .r1aS { font: 400 12.5px Inter, sans-serif; fill: #211B33; }
+          .r1aX { font: 600 13px Inter, sans-serif; fill: #6E6685; }
+          .r1aN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .r1aArr { stroke: #A78BFA; stroke-width: 2.5; fill: none; marker-end: url(#r1aAh); }
+        </style>
+        <defs>
+          <marker id="r1aAh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#8B5CF6" stroke-width="1.6"/>
+          </marker>
+        </defs>
+        <rect x="30" y="120" width="120" height="56" rx="12" fill="#4C1D95"/>
+        <text class="r1aT" x="52" y="145">Question</text>
+        <text class="r1aW" x="52" y="164">from a user</text>
+        <rect x="200" y="120" width="150" height="56" rx="12" fill="#6D28D9"/>
+        <text class="r1aT" x="220" y="145">1 · Retrieve</text>
+        <text class="r1aW" x="220" y="164">search your docs</text>
+        <rect x="200" y="212" width="150" height="56" rx="12" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="r1aI" x="220" y="237">Your documents</text>
+        <text class="r1aS" x="220" y="255">the knowledge base</text>
+        <rect x="400" y="120" width="150" height="56" rx="12" fill="#8B5CF6"/>
+        <text class="r1aT" x="420" y="145">2 · Augment</text>
+        <text class="r1aW" x="420" y="164">passages + question</text>
+        <rect x="600" y="120" width="150" height="56" rx="12" fill="#6D28D9"/>
+        <text class="r1aT" x="620" y="145">3 · Generate</text>
+        <text class="r1aW" x="620" y="164">the model answers</text>
+        <rect x="770" y="120" width="90" height="56" rx="12" fill="#4C1D95"/>
+        <text class="r1aT" x="788" y="145">Cited</text>
+        <text class="r1aW" x="788" y="164">answer</text>
+        <line class="r1aArr" x1="152" y1="148" x2="196" y2="148"/>
+        <line class="r1aArr" x1="275" y1="208" x2="275" y2="180"/>
+        <line class="r1aArr" x1="352" y1="148" x2="396" y2="148"/>
+        <line class="r1aArr" x1="552" y1="148" x2="596" y2="148"/>
+        <line class="r1aArr" x1="752" y1="148" x2="766" y2="148"/>
+        <rect x="30" y="40" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="r1aN" x="54" y="52">The model only ever sees the retrieved passages - not the whole knowledge base.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - retrieve, augment, generate: the whole idea on one line</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The one-breath definition<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is RAG in a sentence you can say out loud in a meeting: <strong>"When someone asks a question, we search our own documents for the few passages that matter, paste just those into the prompt, and have the model answer from them - with a citation."</strong></p>
+        <ul>
+          <li><strong>Retrieve:</strong> a search step finds the most relevant passages. Not keyword search - meaning search, which is why "how do I get my money back" can find a paragraph titled "Refunds" that shares no words with the question.</li>
+          <li><strong>Augment:</strong> those passages are added to the prompt alongside the question. The model's context becomes "here is what our documents say; now answer."</li>
+          <li><strong>Generate:</strong> the model writes an answer grounded in that supplied text, ideally quoting or citing the source it used.</li>
+        </ul>
+        <p>The OpenAI cookbook frames it well: this is giving the model <em>short-term memory through the prompt</em>, which is more reliable for factual recall than baking facts into the model itself.</p>
+        <div class="prompt-box good"><span class="label">★ Try it now (any chat AI)</span>Explain retrieval-augmented generation to a board member in four sentences, using the analogy of a brilliant new hire who is not allowed to memorize the company handbook but can look things up in it before answering. Then name one risk this design removes and one it does not.</div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why not just let the model memorize everything?<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two reasons, and both matter to a budget holder.</p>
+        <ul>
+          <li><strong>Your knowledge changes; the model's training does not.</strong> A price list, a policy, last week's incident - none of that is in the model. Retrieval reads whatever is in your documents <em>right now</em>, so the answer is as current as your files.</li>
+          <li><strong>Memorized facts cannot be cited or removed.</strong> When knowledge lives in the model's weights you cannot point to where an answer came from, and you cannot delete one document's influence. When it lives in retrievable documents, every answer can carry a source, and removing a document removes its answers. That is the auditability leaders keep asking for.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The policy that changed on a Friday.</strong> A support team (anonymized) updated its refund window from 14 to 30 days. With RAG, the change was one edited document and the bot answered "30 days" that afternoon. The team that had fine-tuned a model on the old policy needed a retraining cycle - and in the meantime the model kept confidently saying "14".</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Meaning search, in one paragraph<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The "retrieve" step does not match words - it matches meaning. Every passage is turned into a list of numbers (an <strong>embedding</strong>) that captures what it is about, and the question is turned into the same kind of list. The search finds the passages whose numbers point in the same direction as the question's. You do not need the math today - the builder track's first session lets you feel it in a live playground - but the leadership takeaway is simple: <em>RAG can find the right paragraph even when it shares no keywords with the question.</em> That is what makes it useful on real, messy documents, and it is also why it sometimes retrieves something plausible but wrong - which is exactly what session a4 teaches you to measure.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THREE DOORS ============ -->
+  <section class="section" id="three-doors">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers RAG vs fine-tuning vs long-context</span>
+      <h2>Three doors for "use our data with AI" <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">When a team wants an AI to use company knowledge, there are three doors - and they are constantly confused for each other. RAG adds knowledge. Fine-tuning changes behavior. A bigger prompt just pastes everything in. Most "we need to fine-tune on our data" requests are really RAG requests.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three doors: RAG adds fresh citable knowledge, fine-tuning changes style and behavior, long-context pastes everything in at high cost with no citations">
+        <style>
+          .r1bT { font: 700 16px Inter, sans-serif; fill: #FFFFFF; }
+          .r1bH { font: 700 15px Inter, sans-serif; fill: #211B33; }
+          .r1bW { font: 400 12.5px Inter, sans-serif; fill: #EDE9FB; }
+          .r1bS { font: 400 12.5px Inter, sans-serif; fill: #4A4360; }
+          .r1bN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <rect x="30" y="60" width="260" height="180" rx="16" fill="#6D28D9"/>
+        <text class="r1bT" x="52" y="92">Door 1 · RAG</text>
+        <text class="r1bW" x="52" y="118">Adds fresh, citable</text>
+        <text class="r1bW" x="52" y="138">knowledge from your docs</text>
+        <text class="r1bW" x="52" y="170">✓ current · ✓ cites sources</text>
+        <text class="r1bW" x="52" y="190">✓ cheapest to change</text>
+        <text class="r1bW" x="52" y="210">Use for: facts, policies, docs</text>
+        <rect x="310" y="60" width="260" height="180" rx="16" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="r1bH" x="332" y="92">Door 2 · Fine-tuning</text>
+        <text class="r1bS" x="332" y="118">Changes style, tone,</text>
+        <text class="r1bS" x="332" y="138">format, behavior</text>
+        <text class="r1bS" x="332" y="170">✓ consistent voice + format</text>
+        <text class="r1bS" x="332" y="190">✗ not for facts · ✗ no citations</text>
+        <text class="r1bS" x="332" y="210">Use for: "always answer like this"</text>
+        <rect x="590" y="60" width="260" height="180" rx="16" fill="#4C1D95"/>
+        <text class="r1bT" x="612" y="92">Door 3 · Bigger prompt</text>
+        <text class="r1bW" x="612" y="118">Paste everything into</text>
+        <text class="r1bW" x="612" y="138">a long context window</text>
+        <text class="r1bW" x="612" y="170">✓ no setup · simple</text>
+        <text class="r1bW" x="612" y="190">✗ costly per call · ✗ no citations</text>
+        <text class="r1bW" x="612" y="210">Use for: one small, whole doc</text>
+        <rect x="30" y="270" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="r1bN" x="54" y="282">Rule of thumb: new KNOWLEDGE -&gt; RAG. New BEHAVIOR -&gt; fine-tune. They combine; they are not rivals.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - three doors, and the rule that sorts them</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Knowledge vs behavior - the line that ends the argument<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The cleanest test: <strong>are you trying to teach the model new FACTS, or a new WAY of answering?</strong></p>
+        <ul>
+          <li><strong>New facts</strong> - your products, policies, tickets, contracts - belong in RAG. Facts change, need citing, and should be deletable. Baking them into the model is expensive and un-auditable.</li>
+          <li><strong>New behavior</strong> - "always answer in our house style", "always return JSON in this shape", "adopt this clinical tone" - is what fine-tuning is for. It shapes <em>how</em> the model responds, not <em>what it knows</em>.</li>
+          <li><strong>They stack.</strong> A mature system often fine-tunes for voice AND uses RAG for facts. The question is never "which one" as a rivalry - it is "which one solves the problem in front of us".</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The phrase to listen for</strong>
+          When someone says "let's fine-tune the model on our documentation", nine times out of ten they want the model to <em>answer from</em> the documentation - that is RAG. Fine-tuning on documents teaches style and vocabulary, not reliable recall of what those documents say.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>"Just paste it all in" - when the big prompt is and isn't the answer<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Modern models accept enormous prompts, so a fair question is: why retrieve at all - why not paste the whole knowledge base every time? For one small document, that is genuinely the right, simple move. At any real scale it breaks down:</p>
+        <ul>
+          <li><strong>Cost.</strong> You pay for every token in, on every single call. Pasting a 300-page manual to answer one question, thousands of times a day, is a bill nobody approves twice.</li>
+          <li><strong>Focus.</strong> Bury the one relevant paragraph in 300 pages and the model's accuracy drops - the well-documented "lost in the middle" effect. Retrieval hands it a clean, short context instead.</li>
+          <li><strong>Citations.</strong> When everything is in the prompt, "where did this come from" has no good answer. When a retriever picked five passages, the answer points right at them.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The proof-of-concept that shocked finance.</strong> A team (anonymized) shipped a "paste the whole handbook" assistant that worked beautifully in the demo. The first month's API bill, at production volume, was larger than a year of the vector-database plan RAG would have needed. The fix was not a better model - it was retrieving five passages instead of five hundred pages.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Does RAG even pay off here? The two-question screen<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>RAG is not free - it adds a search system, a place to store embeddings, and a pipeline to keep them fresh. Before funding one, two questions sort most cases:</p>
+        <table class="clean">
+          <thead><tr><th>Question</th><th>If yes</th><th>If no</th></tr></thead>
+          <tbody>
+            <tr><td>Does the answer live in documents the model was not trained on (and that change)?</td><td>RAG is a strong fit</td><td>A plain prompt may be enough</td></tr>
+            <tr><td>Do you need to trust, cite, or audit the answer?</td><td>RAG earns its keep - it grounds and cites</td><td>Long-context might do for a one-off</td></tr>
+          </tbody>
+        </table>
+        <p>Two yeses is the classic RAG use case: a support bot, an internal policy assistant, a research helper over your own corpus. Two nos and you are over-engineering - the discipline the whole course keeps returning to.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE 1 ============ -->
+  <section class="section" id="exercise-1">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 1 of 2</span>
+      <h2>Sort your own "AI on our data" ideas <span class="tag demo">★ 12 min · pen and paper</span></h2>
+    </div>
+    <p class="lede">The three doors become yours the moment you sort real proposals through them. No code - a pen, the diagram above, and eight honest minutes.</p>
+    <div class="steps">
+      <div class="step"><p>List <strong>6 real ideas</strong> from your organization that involve "using our data with AI" - a support bot, a contract assistant, a branded-tone writer, a policy Q&amp;A, anything proposed or rumored.</p></div>
+      <div class="step"><p>For each, ask the line-ending question: is this new <strong>knowledge</strong> (facts from documents) or new <strong>behavior</strong> (a way of answering)? Write RAG, fine-tune, or both next to it.</p></div>
+      <div class="step"><p>For the RAG ones, run the two-question screen: does the knowledge live in changing documents, and do you need to cite or audit the answer? Mark the ones with two yeses - those are the real RAG projects.</p></div>
+      <div class="step"><p>Circle the one idea most likely to be mislabeled "fine-tuning" when it is really RAG. That circle is today's return on 45 minutes.</p></div>
+    </div>
+    <div class="prompt-box good"><span class="label">★ Your sorting partner (paste into any chat AI)</span>You are my sorting partner for AI-on-our-data ideas. I will list 6 ideas. For each, ask me: (1) is the goal new knowledge (facts from documents) or new behavior (a way of answering)? (2) if knowledge, does it live in documents that change, and do we need to cite or audit the answer? Then label each idea RAG, fine-tuning, both, or "just a prompt", and flag any idea I seem to be mislabeling. Be stingy about complexity. Here are my ideas: [list your 6]</div>
+  </section>
+
+  <!-- ============ EXERCISE 2 ============ -->
+  <section class="section" id="exercise-2">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 2 of 2</span>
+      <h2>The "is it really RAG" vendor screen <span class="tag demo">★ 8 min · your next vendor meeting</span></h2>
+    </div>
+    <p class="lede">Four questions that tell you whether a vendor's "AI that uses your data" is real retrieval or a demo trick - politely, in one meeting.</p>
+    <div class="steps">
+      <div class="step"><p><strong>"When our documents change, how fast does the assistant's answers change?"</strong> Real RAG updates as fast as you edit a file. "We retrain quarterly" means it is not retrieval.</p></div>
+      <div class="step"><p><strong>"Can it show me which source passage each answer came from?"</strong> Grounded retrieval cites. If it cannot point at a source, you cannot audit it.</p></div>
+      <div class="step"><p><strong>"What does it do when the answer isn't in our documents?"</strong> A good system refuses or says "I don't know". One that always answers is one that will confidently make things up.</p></div>
+      <div class="step"><p><strong>"Where do our documents and their embeddings live, and who can retrieve them?"</strong> This is the data-governance question - and the one session a5 turns into a checklist.</p></div>
+    </div>
+    <div class="callout tip">
+      <strong>Keep it curious, not prosecutorial</strong>
+      Vendors with real retrieval enjoy these questions - the answers are their selling points. Only the ones running a paste-it-all-in demo find them uncomfortable.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session a2 <span class="tag exercise">◐ 30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Finish sorting all 6 ideas if you ran out of time, and keep the sheet - session a3 reuses it to talk cost, and a4 to talk trust.</li>
+      <li>Run the sorting-partner prompt on the two ideas you were least sure about, and notice where the AI pushes back on your label.</li>
+      <li>Use at least two of the four vendor-screen questions in a real conversation this week.</li>
+      <li>Optional: skim the builder track's session b1 intro - you do not need the code, but seeing the live retrieval playground makes "meaning search" click.</li>
+    </ul>
+    <div class="callout win">
+      <strong>★ Questions to ask your data team this week</strong>
+      <ol>
+        <li>Of everything we call "AI on our data", which are really RAG (new knowledge) and which are fine-tuning (new behavior)?</li>
+        <li>For our top RAG idea, where does the knowledge live, how often does it change, and do we need answers to be cited?</li>
+        <li>Are we anywhere pasting whole documents into prompts at volume - and what is that costing per month?</li>
+        <li>When our assistant does not know something, does it refuse, or does it answer anyway?</li>
+        <li>What is the simplest version of our most ambitious idea - and have we tried it before building a pipeline?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">The leader track teaches from published engineering guidance and course curricula - no vendor marketing. This page covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">OpenAI cookbook · Question Answering Using Embeddings</span><span class="note">Part 1 · knowledge as prompt "memory" · the retrieve-then-answer pattern</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Anthropic · Contextual Retrieval (intro framing)</span><span class="note">Part 1 · why retrieval beats memorizing · deep numbers land in a3/a4</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">RAG vs fine-tuning vs long-context (industry consensus)</span><span class="note">Part 2 · the three doors and the knowledge-vs-behavior rule</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · The three moves of RAG, in order, are...</p>
+      <button class="qopt" type="button">A · Train, deploy, monitor</button>
+      <button class="qopt" type="button">B · Retrieve the relevant passages, augment the prompt with them, generate a grounded answer</button>
+      <button class="qopt" type="button">C · Prompt, fine-tune, evaluate</button>
+      <p class="qwhy">Retrieve, augment, generate. The model only ever sees the passages the search step pulled - never the whole knowledge base.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · A team says "let's fine-tune the model on our support docs so it can answer questions about them." The best reframe is...</p>
+      <button class="qopt" type="button">A · Agree - fine-tuning is how models learn facts</button>
+      <button class="qopt" type="button">B · Suggest a bigger model instead</button>
+      <button class="qopt" type="button">C · That is really a RAG request - they want the model to answer FROM the docs, which is retrieval, not behavior change</button>
+      <p class="qwhy">New knowledge (facts from documents) is RAG's job; fine-tuning changes style and behavior. Fine-tuning on docs teaches vocabulary, not reliable recall.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · The single biggest reason NOT to just paste your whole knowledge base into every prompt is...</p>
+      <button class="qopt" type="button">A · You pay per token on every call, and accuracy drops when the answer is buried in a huge context</button>
+      <button class="qopt" type="button">B · Models cannot read long documents</button>
+      <button class="qopt" type="button">C · It is against the terms of service</button>
+      <p class="qwhy">Cost scales with every token in on every call, and the "lost in the middle" effect hurts accuracy. Retrieval hands the model a short, focused, citable context instead.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 1 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>RAG in one breath</b><span>Search our documents for the passages that matter, paste just those into the prompt, answer from them - with a citation.</span></div>
+      <div class="cheat-item"><b>The three moves</b><span>Retrieve → augment → generate. The model sees the retrieved passages, never the whole base.</span></div>
+      <div class="cheat-item"><b>Three doors</b><span>RAG adds knowledge · fine-tuning changes behavior · a bigger prompt just pastes it all in.</span></div>
+      <div class="cheat-item"><b>The line that ends the argument</b><span>New FACTS → RAG. New WAY of answering → fine-tune. They stack; they are not rivals.</span></div>
+      <div class="cheat-item"><b>Why not memorize</b><span>Your knowledge changes and the model's training does not; memorized facts cannot be cited or deleted.</span></div>
+      <div class="cheat-item"><b>Why not paste it all</b><span>You pay per token every call, accuracy drops in huge contexts, and there is nothing to cite.</span></div>
+      <div class="cheat-item"><b>Does it pay off?</b><span>Knowledge in changing docs + a need to cite or audit = the classic RAG case. Neither = over-engineering.</span></div>
+      <div class="cheat-item"><b>Vendor screen</b><span>How fast do answers change when docs change? Can it cite a source? What does it do when it doesn't know?</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 1 of 6 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="a2-anatomy.html">Next: Anatomy of a RAG system →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

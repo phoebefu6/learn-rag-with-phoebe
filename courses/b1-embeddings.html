@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 1 · Embeddings 101 - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 1 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 1 of 10</div>
+    <h1>Embeddings 101: <span class="accent">turning meaning into numbers</span></h1>
+    <p class="sub">Retrieval stands on one idea: if you can turn a piece of text into a list of numbers that captures what it means, then "find related text" becomes "find nearby numbers". This session builds that intuition from zero - what a vector is, why cosine similarity ranks by meaning, and why a question rarely shares words with its answer. You will feel it in a live playground before you write a line of Python, then meet the real embedding models. This is where Recall, the assistant you grow all track, gets its senses.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">Start here</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:3">3-18 · Concepts</span>
+      <span class="a3" style="flex:5">18-40 · Build-along</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The one idea the whole course rests on</h2>
+    </div>
+    <p class="lede">Everything in RAG - vector databases, chunking, hybrid search, reranking - is machinery around a single trick: <strong>an embedding turns text into a point in space, and nearby points mean similar things</strong>. Get this one idea in your hands and the rest of the track is engineering. Get it wrong and no amount of infrastructure will save your retrieval. So we start slow, and we start with a playground you can poke at right now.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A working intuition for embeddings and cosine similarity, hands-on time in a live retrieval playground over Recall's first corpus, and the Python to embed text with a real model and rank passages by similarity - the beating heart of every RAG system you will ever ship.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: WHAT A VECTOR IS ============ -->
+  <section class="section" id="what-vector">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers embeddings + vector space</span>
+      <h2>A vector is meaning, written as numbers <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">An embedding model reads a piece of text and outputs a fixed-length list of numbers - often hundreds or thousands of them. Each number is a coordinate, so the text becomes a point in a high-dimensional space. The magic is what the model was trained to do: place texts that <em>mean</em> similar things close together, even if they use different words.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A 2D projection of embedding space: travel phrases cluster together, refund phrases cluster elsewhere, and an unrelated phrase sits far away">
+        <style>
+          .b1vAx { stroke: #C7C0DA; stroke-width: 1.5; }
+          .b1vG { font: 600 12px Inter, sans-serif; fill: #6E6685; }
+          .b1vL { font: 600 12.5px Inter, sans-serif; fill: #211B33; }
+          .b1vC1 { fill: #6D28D9; }
+          .b1vC2 { fill: #C6961A; }
+          .b1vC3 { fill: #8B5CF6; }
+          .b1vN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <line class="b1vAx" x1="60" y1="300" x2="820" y2="300"/>
+        <line class="b1vAx" x1="60" y1="40" x2="60" y2="300"/>
+        <text class="b1vG" x="820" y="320" text-anchor="end">dimension 1 →</text>
+        <text class="b1vG" x="40" y="46" transform="rotate(-90 40 46)">dimension 2 →</text>
+        <!-- travel cluster -->
+        <circle class="b1vC1" cx="200" cy="110" r="9"/>
+        <circle class="b1vC1" cx="245" cy="140" r="9"/>
+        <circle class="b1vC1" cx="180" cy="160" r="9"/>
+        <text class="b1vL" x="150" y="95">"book a flight"</text>
+        <text class="b1vL" x="255" y="135">"aisle seat"</text>
+        <text class="b1vL" x="120" y="185">"travel plans"</text>
+        <!-- refund cluster -->
+        <circle class="b1vC2" cx="640" cy="230" r="9"/>
+        <circle class="b1vC2" cx="690" cy="255" r="9"/>
+        <circle class="b1vC2" cx="620" cy="270" r="9"/>
+        <text class="b1vL" x="590" y="218">"get my money back"</text>
+        <text class="b1vL" x="700" y="252">"return policy"</text>
+        <text class="b1vL" x="560" y="292">"refund window"</text>
+        <!-- outlier -->
+        <circle class="b1vC3" cx="420" cy="70" r="9"/>
+        <text class="b1vL" x="360" y="60">"the weather today"</text>
+        <rect x="60" y="316" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b1vN" x="84" y="328">Different words, same meaning, land together. Real space has hundreds of dimensions - same idea.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - embedding space (projected to 2D): meaning becomes location</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>From text to coordinates<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Think of an embedding as a fingerprint of meaning. "Book a flight to Berlin" and "reserve a seat on the Berlin plane" share almost no words, yet a good embedding model puts them millimeters apart, because it learned what they are <em>about</em>. "The mitochondria is the powerhouse of the cell" lands in a completely different region.</p>
+        <ul>
+          <li><strong>Fixed length.</strong> Every text, short or long, becomes the same-size list (e.g. 1,536 numbers for OpenAI's <code>text-embedding-3-small</code>). That is what lets you compare any two.</li>
+          <li><strong>Direction carries meaning.</strong> It is not the magnitude that matters so much as which way the vector points. Two vectors pointing the same way mean similar things - which is exactly what cosine similarity measures.</li>
+          <li><strong>You do not read them.</strong> No single number means "travel". Meaning is spread across all the dimensions at once. You never inspect them by hand - you compare them.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why questions rarely share words with answers<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is the argument for embeddings over old-fashioned keyword search, straight from the OpenAI cookbook: <strong>questions often do not lexically overlap with their answers.</strong> "How do I get my money back?" and a help-center paragraph titled "Refunds are issued to the original payment method within 5-7 business days" share zero important words. Keyword search misses it. Meaning search nails it, because both land in the same region of embedding space.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The FAQ nobody could find.</strong> A team (anonymized) had a perfect answer to "why was I charged twice?" living under a heading called "Duplicate authorization holds". Keyword search never surfaced it - no shared words. Switching retrieval to embeddings made it the top hit overnight. Same documents, different math.</p>
+        </div>
+        <p>You will watch exactly this happen in the playground below - type a question in your own words and see it rank a passage that shares none of them.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: COSINE + PLAYGROUND ============ -->
+  <section class="section" id="cosine">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers cosine similarity + the retrieval mechanic</span>
+      <h2>Cosine similarity: ranking by angle <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Once every text is a vector, "most related" becomes "smallest angle between vectors". Cosine similarity measures that: 1.0 means pointing the exact same way (identical meaning), 0 means unrelated (perpendicular). It is the single most common similarity metric in RAG, and the OpenAI cookbook computes it as <code>1 - cosine_distance</code>.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cosine similarity shown as the angle between vectors: a small angle to a related passage scores high, a wide angle to an unrelated one scores low">
+        <style>
+          .b1cV { stroke-width: 3; fill: none; }
+          .b1cQ { stroke: #4C1D95; marker-end: url(#b1cAh); }
+          .b1cA { stroke: #6D28D9; marker-end: url(#b1cAh2); }
+          .b1cB { stroke: #C7C0DA; marker-end: url(#b1cAh3); }
+          .b1cL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b1cS { font: 600 12.5px Inter, sans-serif; fill: #6E6685; }
+          .b1cScore { font: 800 15px Inter, sans-serif; fill: #6D28D9; }
+          .b1cN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b1cAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#4C1D95"/></marker>
+          <marker id="b1cAh2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#6D28D9"/></marker>
+          <marker id="b1cAh3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#C7C0DA"/></marker>
+        </defs>
+        <line class="b1cV b1cQ" x1="120" y1="250" x2="360" y2="70"/>
+        <text class="b1cL" x="365" y="66">query: "money back?"</text>
+        <line class="b1cV b1cA" x1="120" y1="250" x2="390" y2="95"/>
+        <text class="b1cL" x="395" y="108">"refund policy"</text>
+        <text class="b1cScore" x="395" y="128">cosine 0.82 ✓</text>
+        <line class="b1cV b1cB" x1="120" y1="250" x2="330" y2="235"/>
+        <text class="b1cL" x="335" y="238">"office hours"</text>
+        <text class="b1cS" x="335" y="256">cosine 0.09</text>
+        <path d="M 175 214 A 60 60 0 0 1 188 197" fill="none" stroke="#6D28D9" stroke-width="2"/>
+        <text class="b1cS" x="200" y="205">small angle</text>
+        <rect x="120" y="272" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b1cN" x="144" y="284">Retrieval = rank every passage by cosine to the query, return the top few.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - cosine similarity is the angle between the query and each passage</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The metric, without the trigonometry<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You do not need to compute cosines by hand, but the shape is worth holding:</p>
+        <ul>
+          <li><strong>1.0</strong> - vectors point the same way. Same meaning. (A text compared with itself scores 1.0.)</li>
+          <li><strong>~0</strong> - vectors are perpendicular. Unrelated.</li>
+          <li><strong>Rank, don't threshold (at first).</strong> Retrieval usually returns the top-k highest-cosine passages rather than "everything above 0.8". Absolute scores drift by model; the <em>ranking</em> is what you trust.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Cosine vs dot product vs L2</strong>
+          Three metrics show up in vector databases: cosine (angle), dot product (angle + magnitude), and Euclidean/L2 (straight-line distance). For text embeddings, cosine is the usual default because it ignores length and compares pure direction. You will see all three as operators when we meet pgvector in b3.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>★ Build-along: your first retriever, live in the browser<span class="mini">6 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This is Recall's first corpus: <strong>Corpus A</strong>, the chief-of-staff notes for a managing director. Type a question in your own words and hit Search. Watch each note score by cosine similarity, the best match rise to the top, and the matched terms light up. The vector strip shows your query as its top dimensions - meaning, as numbers.</p>
+        <div class="ragbox" data-corpus="A" data-k="3" data-vector="1"
+             data-caption="Try: 'what did the MD promise about cloud spend?' or 'travel seat preference' - note how it finds the right chunk even with different words."></div>
+        <div class="callout tip">
+          <strong>Honesty note - what this playground really does</strong>
+          To run with zero network calls, this tool uses a <em>simplified</em> embedding: term frequency over a small vocabulary, with a synonym map so related words land near each other. Real embedding models are neural and far richer. But the math that ranks the results - cosine similarity over vectors - is exactly what production RAG uses. You are watching the real mechanic with a toy embedder.
+        </div>
+        <p>Try a query where the answer shares no words with your question ("holiday seating" against "aisle seats"), and one that is not in the corpus at all - notice it still returns its best guess. Deciding when a best guess is too weak to use is the whole of session b7.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The same thing in Python, with a real model<span class="mini">4 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Outside the browser, you swap the toy embedder for a real one - an API call or a local model - and the rest is identical: embed, then rank by cosine. Here is the whole idea in a few lines, following the OpenAI cookbook pattern.</p>
+        <div class="prompt-box good"><span class="label">Python · embed passages and rank by cosine</span>from openai import OpenAI
+import numpy as np
+
+client = OpenAI()
+
+def embed(texts):
+    resp = client.embeddings.create(model="text-embedding-3-small", input=texts)
+    return [np.array(d.embedding) for d in resp.data]
+
+def cosine(a, b):
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+docs = ["Refunds are issued within 5-7 business days.",
+        "Standard shipping takes 3-5 business days.",
+        "Support is open Monday to Friday, 9am-6pm."]
+doc_vecs = embed(docs)
+
+query = "how do I get my money back?"
+q = embed([query])[0]
+
+ranked = sorted(((cosine(q, d), doc) for d, doc in zip(doc_vecs, docs)), reverse=True)
+for score, doc in ranked:
+    print(f"{score:.3f}  {doc}")</div>
+        <p>The top line will be the refund passage, scoring far above the others - despite sharing not one meaningful word with the question. That gap, and nothing else, is why RAG works. Everything later in the track makes this step faster, cheaper, and more accurate at scale.</p>
+        <div class="callout tip">
+          <strong>Picking an embedding model</strong>
+          You will choose between models by three levers: <strong>quality</strong> (retrieval benchmark scores), <strong>dimensions</strong> (bigger = richer but more storage and slower), and <strong>cost/latency</strong> (API vs local). Anthropic's own retrieval work recommends strong models like Voyage and Gemini embeddings; OpenAI's <code>text-embedding-3-small</code> is a common, cheap default. Whatever you pick, embed your documents and your queries with the <em>same</em> model - mismatched spaces do not compare.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG / EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · take it further</span>
+      <h2>Break the retriever on purpose <span class="tag demo">★ 10 min · the playground above</span></h2>
+    </div>
+    <p class="lede">The fastest way to trust a retriever is to find where it fails. Use the Corpus A playground and hunt for its edges - the same edges real embedding systems have, just louder in a toy one.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Synonym win.</strong> Ask for something using completely different words than the note uses ("vacation flight seat" vs the note's "aisle seats"). Confirm it still ranks the right note first, and note the cosine score.</p></div>
+      <div class="step"><p><strong>Ambiguity.</strong> Type a vague one-word query like "review". See which notes it pulls and why - short, vague queries are where retrieval is weakest, a lesson that returns in b6 (query expansion).</p></div>
+      <div class="step"><p><strong>Not in the corpus.</strong> Ask something Corpus A cannot answer ("what is our AWS bill?"). Watch it confidently return its closest-but-wrong note. Write down what score the top result got - that number is the seed of session b7's refusal threshold.</p></div>
+      <div class="step"><p><strong>Reflect.</strong> In one line: what kind of question is this retriever best at, and what kind quietly defeats it? That instinct is worth more than any benchmark.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b1</strong>
+      Recall can now turn text into vectors and rank passages by meaning. It has senses. In b2 we feed it real documents - and discover that HOW you cut those documents into chunks decides whether retrieval works at all.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b2 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Run the Python snippet against a real API key (or a local embedding model via <code>sentence-transformers</code>) on five sentences of your own, and confirm a paraphrased query out-ranks a keyword-matched but unrelated one.</li>
+      <li>Swap in a second embedding model and re-run - notice the absolute cosine scores move but the ranking mostly holds. That is why we trust rank over threshold.</li>
+      <li>In the playground, collect three queries where the top result was wrong. Keep them - they become your first evaluation questions in b9.</li>
+      <li>Read: the OpenAI cookbook "Question Answering Using Embeddings" and skim Weaviate's "Vector Embeddings Explained".</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from official docs and cookbooks. This page covers ~80% of their working content on embeddings and similarity - the rest (hosted infra, paid keys) stays with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">OpenAI cookbook · Question Answering Using Embeddings</span><span class="note">Part 1-2 · cosine = 1 - cosine_distance · questions rarely overlap answers · the embed-then-rank pattern</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Weaviate · Vector Embeddings Explained</span><span class="note">Part 1 · embeddings as meaning-in-space · small distance = similar</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">DeepLearning.AI · Vector Databases: from Embeddings to Applications</span><span class="note">Part 1 covers obtaining and comparing vectors; ANN search lands in b3</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Anthropic · Contextual Retrieval (model choice)</span><span class="note">Self-study · embedding-model recommendations (Voyage, Gemini)</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · An embedding is...</p>
+      <button class="qopt" type="button">A · A compressed copy of the document's text</button>
+      <button class="qopt" type="button">B · A fixed-length list of numbers that represents the text's meaning as a point in space</button>
+      <button class="qopt" type="button">C · The keywords extracted from the text</button>
+      <p class="qwhy">An embedding is a fixed-length vector; texts with similar meaning land close together, which is what makes meaning search possible.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · Cosine similarity of 1.0 between a query and a passage means...</p>
+      <button class="qopt" type="button">A · They share the most keywords</button>
+      <button class="qopt" type="button">B · They are exactly the same length</button>
+      <button class="qopt" type="button">C · Their vectors point in the same direction - the model reads them as the same meaning</button>
+      <p class="qwhy">Cosine measures the angle between vectors. 1.0 = same direction = same meaning; ~0 = perpendicular = unrelated.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Why does embedding-based retrieval beat keyword search for "how do I get my money back?"</p>
+      <button class="qopt" type="button">A · The question and its answer often share no keywords, but their meanings - and so their vectors - are close</button>
+      <button class="qopt" type="button">B · Embeddings are faster to compute than keyword indexes</button>
+      <button class="qopt" type="button">C · Keyword search cannot handle questions</button>
+      <p class="qwhy">Questions rarely lexically overlap their answers (OpenAI). Meaning search finds the "Refunds" passage even though it shares no words with the question.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 1 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Embedding</b><span>A fixed-length vector of numbers representing meaning. Similar meaning → nearby points.</span></div>
+      <div class="cheat-item"><b>The core trick</b><span>"Find related text" becomes "find nearby vectors". All of RAG is machinery around this.</span></div>
+      <div class="cheat-item"><b>Cosine similarity</b><span>Angle between vectors. 1.0 = same meaning, ~0 = unrelated. Computed as 1 - cosine_distance.</span></div>
+      <div class="cheat-item"><b>Rank, don't threshold</b><span>Return the top-k by cosine. Absolute scores drift by model; ranking is what you trust.</span></div>
+      <div class="cheat-item"><b>Why not keywords</b><span>Questions rarely share words with their answers. Meaning search finds the right passage anyway.</span></div>
+      <div class="cheat-item"><b>Metrics</b><span>Cosine (angle), dot product (angle + size), L2 (distance). Cosine is the text default.</span></div>
+      <div class="cheat-item"><b>Model levers</b><span>Quality vs dimensions vs cost/latency. Embed docs and queries with the SAME model.</span></div>
+      <div class="cheat-item"><b>The pipeline so far</b><span>embed(text) → cosine(query, each doc) → sort → top-k. Everything later just scales this.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 1 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="b2-chunking.html">Next: Chunking strategies →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

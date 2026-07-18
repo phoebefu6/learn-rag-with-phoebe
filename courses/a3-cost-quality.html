@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 3 · Cost vs quality: the real tradeoffs - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Leader session 3 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Leader track · Session 3 of 6</div>
+    <h1>Cost vs quality: <span class="accent">the real tradeoffs</span></h1>
+    <p class="sub">Two questions decide whether a RAG project is a good investment: where does the money actually go, and where is quality actually won? The surprising answer to both is that they barely overlap. The parts that dominate your bill are not the parts that most improve your answers - which means the smart moves raise accuracy without moving the invoice much. This session gives you the cost model on one page, the lever board that separates cheap wins from expensive ones, and enough real numbers to sanity-check any proposal your team brings you.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Leader track</span>
+      <span class="chip audience">Leaders: C-level · managers</span>
+      <span class="chip audience">No code, ever</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Concepts</span>
+      <span class="a3" style="flex:4">20-40 · Exercises</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why cost and quality are two different maps</h2>
+    </div>
+    <p class="lede">In session a2 you learned the nine parts and the line between index-time work (done once) and query-time work (paid per question). This session puts money and quality on that same anatomy - and the lesson is that the two do not line up. The biggest cost in a RAG system is the model writing the answer, on every call, forever. But the biggest quality gains come from cheap places: how you cut the documents, whether you re-score results, and whether the system knows when to refuse. A leader who understands this stops approving expensive upgrades that barely help and starts funding cheap changes that quietly double the accuracy.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Try it now prompt</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      A three-bucket cost model (one-time indexing, storage, per-query) and the knowledge that generation dominates the per-query bill; a lever board that sorts quality moves into cheap wins and expensive ones; real numbers from Anthropic's contextual retrieval; a clear-eyed build-vs-buy frame; and questions to ask your data team this week.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: WHERE THE MONEY GOES ============ -->
+  <section class="section" id="where-money-goes">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the three cost buckets and the long-context anti-pattern</span>
+      <h2>Where the money actually goes <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">RAG cost falls into three buckets, and only one of them grows with use. Index-time embedding is a one-off. Storage is a steady monthly hosting fee. Per-query cost - embedding the question, optionally reranking, and the model generating the answer - is paid on every single question, and inside it the generation step dominates. Picture the three buckets, sized the way they actually behave at scale.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three RAG cost buckets. One-time indexing: embed all documents once, a project cost. Storage: monthly vector database hosting, steady. Per-query cost, paid every question and growing with use: a small query-embedding slice, an optional rerank slice, and a large generation slice that dominates.">
+        <style>
+          .a3cT { font: 700 14px Inter, sans-serif; fill: #FFFFFF; }
+          .a3cI { font: 700 14px Inter, sans-serif; fill: #211B33; }
+          .a3cW { font: 400 11.5px Inter, sans-serif; fill: #EDE9FB; }
+          .a3cS { font: 400 11.5px Inter, sans-serif; fill: #211B33; }
+          .a3cH { font: 700 13px Inter, sans-serif; fill: #6E6685; }
+          .a3cN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <!-- Bucket 1: one-time indexing -->
+        <text class="a3cH" x="30" y="56">Bucket 1 · one-time indexing</text>
+        <rect x="30" y="66" width="180" height="60" rx="12" fill="#A78BFA"/>
+        <text class="a3cI" x="48" y="92">Embed all docs once</text>
+        <text class="a3cS" x="48" y="112">project cost · paid on re-index</text>
+
+        <!-- Bucket 2: storage -->
+        <text class="a3cH" x="30" y="160">Bucket 2 · storage</text>
+        <rect x="30" y="170" width="180" height="60" rx="12" fill="#8B5CF6"/>
+        <text class="a3cT" x="48" y="196">Vector DB hosting</text>
+        <text class="a3cW" x="48" y="216">steady monthly fee</text>
+
+        <!-- Bucket 3: per-query, broken into slices, sized -->
+        <text class="a3cH" x="30" y="264">Bucket 3 · per-query cost · paid every question, grows with use</text>
+        <rect x="30" y="274" width="90" height="56" rx="10" fill="#4C1D95"/>
+        <text class="a3cT" x="42" y="298">Query</text>
+        <text class="a3cW" x="42" y="316">embed · tiny</text>
+        <rect x="128" y="274" width="120" height="56" rx="10" fill="#6D28D9"/>
+        <text class="a3cT" x="140" y="298">Rerank</text>
+        <text class="a3cW" x="140" y="316">optional · small</text>
+        <rect x="256" y="274" width="560" height="56" rx="10" fill="#4C1D95"/>
+        <text class="a3cT" x="274" y="298">Generation · the model writes the answer</text>
+        <text class="a3cW" x="274" y="316">the dominant per-query cost · scales with every token in and out</text>
+
+        <!-- takeaway -->
+        <rect x="30" y="338" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a3cN" x="54" y="350">Generation dominates the per-query bill. Cut what you feed it and how often you call it before you cut anything else.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - three cost buckets, and why generation is the one that scales</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The three cost buckets, and which one keeps you up at night<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every RAG bill sorts into three buckets. Knowing which is which stops you from optimizing the one that does not matter.</p>
+        <ul>
+          <li><strong>One-time indexing.</strong> Embedding all your documents is paid once (again only when you re-index). It can feel large the day you run it, but it is a project cost, not a running one. Do not let its size scare you off a good design.</li>
+          <li><strong>Storage.</strong> Hosting the vector database is a steady monthly fee that grows slowly with the size of your corpus. Predictable, and usually the smallest of the three at real scale.</li>
+          <li><strong>Per-query cost.</strong> This is the one that keeps you up at night, because it grows with adoption. It is the query embedding (tiny), optional reranking (small), and the model generating the answer (large). Success - more people using the system - makes this bucket bigger.</li>
+        </ul>
+        <p>The uncomfortable truth: the more successful your assistant, the more the per-query bucket dominates. So the per-query design - especially how much text you feed the model and how often - is the number a leader should watch.</p>
+        <div class="prompt-box good"><span class="label">★ Try it now (any chat AI)</span>I run a RAG assistant. Explain, using a restaurant analogy, the difference between a one-time cost (fitting out the kitchen), a fixed monthly cost (rent), and a per-order cost (ingredients for each dish). Then tell me which one grows as the restaurant gets more popular, and what that means for how I should watch costs.</div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why generation dominates - and why "paste everything" is the expensive trap<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Inside the per-query bucket, the model writing the answer costs far more than the search that found the passages. Search over numbers is cheap and fast; a language model reading a prompt and composing a reply is where the tokens - and the money - are spent. Two consequences follow directly:</p>
+        <ul>
+          <li><strong>Feed the model less, pay less.</strong> The cost of generation scales with how many tokens go in and come out. Handing it five tight passages instead of fifty loose ones is a direct saving on every call.</li>
+          <li><strong>The long-context anti-pattern from a1 is a cost story.</strong> "Just paste the whole document into every prompt" means you pay for every token in, on every single call. It looks free in a demo of ten questions; at production volume it is the bill that shocks finance. Retrieval exists partly to keep the generation prompt short.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The month the meter moved.</strong> A team (anonymized) launched an internal assistant and watched usage climb from a few dozen questions a day to a few thousand. The one-time indexing cost never changed and storage barely moved - but the per-query generation cost tracked usage almost exactly, because each answer called the model. The lever that brought the bill back under control was not a cheaper model; it was retrieving fewer, better passages so each call fed the model less text.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>A note on why no pricing tables appear here<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You will notice this session names shapes and ratios but not dollar-per-token vendor prices. That is deliberate and honest: model and vector-database pricing changes often enough that any table printed here would be wrong within a quarter, and quoting a specific vendor's rate would date the whole course. What does not change is the <em>shape</em> - one-time indexing, steady storage, per-query generation that dominates and scales with use. Learn the shape and you can drop today's live prices into it in five minutes. The one durable cost figure worth carrying is Anthropic's published contextual-retrieval number in the next section, because it is a ratio (cost per million tokens with prompt caching) rather than a list price, and it illustrates how cheap a strong quality lever can be.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: WHERE QUALITY IS WON ============ -->
+  <section class="section" id="where-quality-won">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the quality levers and build vs buy</span>
+      <h2>Where quality is won - and the cheap levers <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Now the good news. The levers that most improve answer quality are mostly cheap, and the expensive ones give less than you would hope. Below is the lever board: on the left, high-impact low-cost moves; on the right, high-cost moves that barely move the needle. A leader's job is to keep the team reaching left before it reaches right.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A lever board comparing quality moves. Cheap high-impact levers on the left: better chunking, adding reranking, a refusal threshold. Expensive lower-impact levers on the right: a bigger embedding model, retrieving more passages, a bigger language model.">
+        <style>
+          .a3qT { font: 700 14px Inter, sans-serif; fill: #FFFFFF; }
+          .a3qI { font: 700 14px Inter, sans-serif; fill: #211B33; }
+          .a3qW { font: 400 11.5px Inter, sans-serif; fill: #EDE9FB; }
+          .a3qS { font: 400 11.5px Inter, sans-serif; fill: #211B33; }
+          .a3qH { font: 700 13px Inter, sans-serif; fill: #6E6685; }
+          .a3qN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <!-- column headers -->
+        <rect x="30" y="46" width="390" height="30" rx="8" fill="#6D28D9"/>
+        <text class="a3qT" x="48" y="66">Cheap wins · reach here first</text>
+        <rect x="460" y="46" width="390" height="30" rx="8" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a3qI" x="478" y="66">Expensive levers · reach here last</text>
+
+        <!-- left levers -->
+        <rect x="30" y="88" width="390" height="56" rx="11" fill="#4C1D95"/>
+        <text class="a3qT" x="48" y="112">Better chunking</text>
+        <text class="a3qW" x="48" y="132">test the cut · big quality gain · near-zero extra run cost</text>
+        <rect x="30" y="152" width="390" height="56" rx="11" fill="#6D28D9"/>
+        <text class="a3qT" x="48" y="176">Add reranking</text>
+        <text class="a3qW" x="48" y="196">re-score a small candidate set · large accuracy lift · cheap</text>
+        <rect x="30" y="216" width="390" height="56" rx="11" fill="#8B5CF6"/>
+        <text class="a3qT" x="48" y="240">A refusal threshold</text>
+        <text class="a3qW" x="48" y="260">say "I don't know" when retrieval is weak · trust, ~free</text>
+
+        <!-- right levers -->
+        <rect x="460" y="88" width="390" height="56" rx="11" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a3qI" x="478" y="112">Bigger embedding model</text>
+        <text class="a3qS" x="478" y="132">costs to re-embed everything · modest quality gain</text>
+        <rect x="460" y="152" width="390" height="56" rx="11" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a3qI" x="478" y="176">Retrieve more passages</text>
+        <text class="a3qS" x="478" y="196">more tokens into every call · cost up · can hurt focus</text>
+        <rect x="460" y="216" width="390" height="56" rx="11" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a3qI" x="478" y="240">Bigger language model</text>
+        <text class="a3qS" x="478" y="260">highest per-query cost · often the smallest real gain</text>
+
+        <!-- takeaway -->
+        <rect x="30" y="322" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a3qN" x="54" y="334">Fix retrieval before you upgrade the model. Chunking and reranking buy more accuracy per dollar than a bigger LLM.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the lever board: cheap wins on the left, expensive moves on the right</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The cheap wins: chunking, reranking, and knowing when to refuse<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Three levers give the most quality per dollar, and none of them means buying a bigger model.</p>
+        <ul>
+          <li><strong>Better chunking.</strong> Cutting documents into the right-sized passages helps retrieval find the truly relevant text. It is a one-time index-time change with almost no extra running cost, and it caps the quality of everything downstream - so it pays back on every query forever.</li>
+          <li><strong>Adding reranking.</strong> Instead of trusting the first search, you fetch a larger candidate set and re-score it, keeping only the best few. Because you rerank a small set, the cost is small - but the accuracy lift is large, since the model now sees the genuinely best passages, not just the first ones the search returned.</li>
+          <li><strong>A refusal threshold.</strong> Teaching the system to say "I don't know" when retrieval comes back weak costs essentially nothing and buys the thing leaders value most: trust. An assistant that refuses when it should is worth more than one that always answers.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The reranking funnel, in one image</strong>
+          A common, cheap pattern: retrieve a wide net of about 150 candidates, rerank them, and keep the top ~20 to hand the model. You only pay the rerank cost on that small candidate set - never on the whole corpus - which is why reranking is affordable even though scoring millions of records would not be.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Contextual retrieval - real numbers for a real lever<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is a concrete, published example of a cheap lever with big returns. Anthropic's <strong>contextual retrieval</strong> technique adds a short piece of context (roughly 50 to 100 tokens) to each chunk before embedding it, so a passage carries a hint of where it came from. Measured as the reduction in retrieval failures (the share of times the right passage is missing from the top 20 results, baseline 5.7%):</p>
+        <table class="clean">
+          <thead><tr><th>Lever added</th><th>Reduction in retrieval failures</th></tr></thead>
+          <tbody>
+            <tr><td>Contextual embeddings</td><td>-35%</td></tr>
+            <tr><td>+ contextual keyword search (BM25)</td><td>-49%</td></tr>
+            <tr><td>+ reranking</td><td>-67%</td></tr>
+          </tbody>
+        </table>
+        <p>Two-thirds fewer retrieval failures by stacking cheap levers - not by buying a bigger model. And the cost of adding that context is a one-time roughly <strong>$1.02 per million document tokens</strong>, thanks to prompt caching and a small model (Claude 3 Haiku) doing the contextualizing. That is the shape of a good RAG investment: a small, one-time index-time spend that lifts quality on every query forever.</p>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The upgrade nobody needed.</strong> A team (anonymized) was ready to sign off on a far pricier flagship model to "fix accuracy". A quick test first added reranking to their existing retrieval and set a refusal threshold. Accuracy rose enough that the model upgrade was shelved - the fix was in retrieval, at a fraction of the cost, exactly as the lever board predicts.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Build vs buy - the honest frame<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Most teams should <strong>buy</strong> the hard, undifferentiated parts and <strong>build</strong> only what is theirs. A managed vector database (hosted storage and fast search) and an embeddings API (someone else runs the model that turns text into numbers) let a small team stand up real retrieval in days, with predictable per-query costs and no infrastructure to babysit. Self-hosting the vector store and running your own embedding models can be cheaper at very large scale, or necessary for strict data-residency rules - but it trades a running fee for a team's time and on-call burden, which is rarely the right trade early. The leader's frame: buy the plumbing, build the parts that make your assistant <em>yours</em> - your documents, your chunking choices, your evaluation, your refusal policy. Session a5 turns the data-residency side of this into a governance checklist. Note that fast vector search typically returns in well under 100 milliseconds, so "buy" rarely costs you speed - it is a cost and control decision, not a performance one.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE 1 ============ -->
+  <section class="section" id="exercise-1">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 1 of 2</span>
+      <h2>Sketch the cost model for your RAG idea <span class="tag demo">★ 12 min · pen and paper</span></h2>
+    </div>
+    <p class="lede">Take the RAG idea you mapped in session a2 and put money on it - not exact dollars, but the shape. The goal is to find your dominant cost before your team does.</p>
+    <div class="steps">
+      <div class="step"><p>Draw three boxes: <strong>one-time indexing</strong> (embed all our docs once), <strong>storage</strong> (monthly vector DB hosting), and <strong>per-query</strong> (query embed + optional rerank + generation).</p></div>
+      <div class="step"><p>Estimate rough size for each. You will not have exact numbers - use small / medium / large. Ask: how big is our corpus (indexing), and how many questions a day do we expect (per-query)?</p></div>
+      <div class="step"><p>Now project forward: at 10x today's usage, which box grows? Circle it. For almost every real assistant it is the per-query box, driven by generation.</p></div>
+      <div class="step"><p>Write one sentence: "Our dominant cost is ____, and the lever that controls it is ____." For most, the honest answer is "generation, controlled by feeding the model fewer, better passages".</p></div>
+    </div>
+    <div class="prompt-box good"><span class="label">★ Your cost-model partner (paste into any chat AI)</span>Help me sketch the cost model for a RAG assistant. There are three buckets: one-time indexing (embed all docs once), storage (monthly vector DB), and per-query (query embedding + optional reranking + model generation). I will describe my corpus size and expected daily question volume. Walk me through which bucket dominates today and which grows fastest as usage scales, then name the single lever that most controls my dominant cost. Be honest that generation usually dominates. Here is my situation: [describe corpus size and volume]</div>
+  </section>
+
+  <!-- ============ EXERCISE 2 ============ -->
+  <section class="section" id="exercise-2">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 2 of 2</span>
+      <h2>The "cheapest quality win" audit <span class="tag demo">★ 8 min · a system you have</span></h2>
+    </div>
+    <p class="lede">For a RAG system you run or are considering, rank the six levers by return on spend. The exercise trains the instinct to reach left on the lever board before reaching right.</p>
+    <div class="steps">
+      <div class="step"><p>List the six levers: better chunking, add reranking, a refusal threshold (the cheap three) and bigger embedding model, retrieve more passages, bigger LLM (the expensive three).</p></div>
+      <div class="step"><p>For your system, mark which of the cheap three you have <strong>not</strong> yet done. Each un-done cheap lever is quality you are leaving on the table for almost no money.</p></div>
+      <div class="step"><p>Check whether anyone has proposed an expensive lever - a bigger model, more passages - to "fix accuracy". If so, ask whether the cheap three were tried first. Usually they were not.</p></div>
+      <div class="step"><p>Write your first move: the single cheapest lever you have not pulled. For most systems it is reranking or a refusal threshold - large accuracy or trust gain, small cost.</p></div>
+    </div>
+    <div class="callout tip">
+      <strong>The order that saves money</strong>
+      When a team says "accuracy is not good enough", the disciplined response is a sequence, not a purchase: first test chunking, then add reranking, then set a refusal threshold - and only if all three are exhausted, consider a bigger model. The contextual-retrieval numbers show why: the cheap stack removed two-thirds of retrieval failures before a bigger model was ever on the table.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session a4 <span class="tag exercise">◐ 30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Finish your three-bucket cost sketch and write the one-sentence "dominant cost / controlling lever" line. Keep it - a4 connects cost discipline to how you measure quality.</li>
+      <li>Run the cheapest-quality-win audit and name the one cheap lever you have not yet pulled.</li>
+      <li>Find out whether anyone in your org has proposed a model upgrade to fix accuracy, and whether reranking and a refusal threshold were tried first.</li>
+      <li>Optional: read Anthropic's contextual-retrieval write-up for the full numbers - you do not need the code, just the ratios and the one-time cost figure.</li>
+    </ul>
+    <div class="callout win">
+      <strong>★ Questions to ask your data team this week</strong>
+      <ol>
+        <li>Which of our three cost buckets - one-time indexing, storage, per-query - is biggest today, and which grows fastest as we scale?</li>
+        <li>Are we anywhere feeding the model more text than it needs, and what would retrieving fewer, better passages save per month?</li>
+        <li>Have we added reranking and a refusal threshold - and if not, why are we considering a bigger model first?</li>
+        <li>Could contextual retrieval reduce our retrieval failures, and what would the one-time contextualizing cost be for our corpus?</li>
+        <li>For storage and embeddings, are we buying managed services or self-hosting - and is that a cost, control, or data-residency decision?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">The leader track teaches from published engineering guidance and course curricula - no vendor marketing, and no pricing tables reproduced (list prices date too fast; only durable ratios are cited). This page covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Contextual Retrieval</span><span class="note">Part 2 · the -35% / -49% / -67% failure-reduction figures and the ~$1.02 per million tokens one-time cost</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Pinecone · Rerankers and reranking</span><span class="note">Parts 1 &amp; 2 · the retrieve-wide-then-rerank funnel and why you only rerank a small candidate set</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">DeepLearning.AI · Advanced RAG</span><span class="note">Part 2 · quality levers and the build-vs-buy framing</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Inside the per-query cost of a RAG system, the dominant expense is usually...</p>
+      <button class="qopt" type="button">A · Embedding the user's question</button>
+      <button class="qopt" type="button">B · Storing the vector database</button>
+      <button class="qopt" type="button">C · The model generating the answer, because cost scales with every token fed in and written out</button>
+      <p class="qwhy">Generation dominates per-query cost and grows with adoption. That is why feeding the model fewer, better passages saves more than almost anything else.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · A team says accuracy is too low and wants to buy a bigger language model. The disciplined first move is...</p>
+      <button class="qopt" type="button">A · Try the cheap levers first - test chunking, add reranking, set a refusal threshold - before spending on a bigger model</button>
+      <button class="qopt" type="button">B · Approve the bigger model immediately; size fixes quality</button>
+      <button class="qopt" type="button">C · Paste all the documents into every prompt instead</button>
+      <p class="qwhy">The cheap levers live in retrieval. Anthropic's contextual retrieval stacked cheap levers to cut retrieval failures by two-thirds before any model upgrade was needed.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · Why do you rerank only a small candidate set (say ~150 fetched, ~20 kept) rather than reranking the whole corpus?</p>
+      <button class="qopt" type="button">A · Because reranking is illegal on large datasets</button>
+      <button class="qopt" type="button">B · Because reranking every record is far too slow and costly - scoring millions would take many hours - so you rerank only the small set retrieval already narrowed to</button>
+      <button class="qopt" type="button">C · Because the corpus is stored in the wrong format</button>
+      <p class="qwhy">Fast vector search narrows millions of passages to a small candidate set in under 100ms; reranking that small set is cheap, while reranking everything would be prohibitively slow.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 3 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Three cost buckets</b><span>One-time indexing (embed once), storage (monthly hosting), per-query (embed + rerank + generate).</span></div>
+      <div class="cheat-item"><b>Generation dominates</b><span>The model writing the answer is the biggest per-query cost, and it grows with adoption.</span></div>
+      <div class="cheat-item"><b>The expensive anti-pattern</b><span>"Paste everything" pays per token in, on every call - a bill that shocks finance at scale.</span></div>
+      <div class="cheat-item"><b>Cheap wins</b><span>Better chunking, add reranking, a refusal threshold. Reach here before buying anything.</span></div>
+      <div class="cheat-item"><b>Contextual retrieval</b><span>-35% / -49% / -67% fewer retrieval failures stacking cheap levers; ~$1.02 per million doc tokens, one time.</span></div>
+      <div class="cheat-item"><b>The rerank funnel</b><span>Retrieve ~150, rerank, keep ~20. You only pay rerank on the small candidate set.</span></div>
+      <div class="cheat-item"><b>Build vs buy</b><span>Buy the plumbing (managed vector DB + embeddings API); build what makes the assistant yours.</span></div>
+      <div class="cheat-item"><b>The money-saving order</b><span>Chunk → rerank → refuse → only then a bigger model. Fix retrieval before you upgrade the LLM.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 3 of 6 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="a2-anatomy.html">← Prev: Anatomy of a RAG system</a> &nbsp;·&nbsp; <a href="a4-judge-a-rag.html">Next: Judge a RAG →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

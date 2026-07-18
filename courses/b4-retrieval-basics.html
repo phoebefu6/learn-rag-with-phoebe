@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 4 · Retrieval basics - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 4 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 4 of 10</div>
+    <h1>Retrieval basics: <span class="accent">ask, rank, take the top few</span></h1>
+    <p class="sub">You have embeddings (b1), chunks (b2), and a vector database to hold them (b3). Now the payoff: given a question, pull the passages most likely to answer it. That is retrieval, and at its core it is one move - embed the query, score every chunk by cosine, sort, keep the top k. This session makes that move concrete in Python, wraps it behind the retriever interface every framework exposes, and teaches you the skill that separates people who ship RAG from people who ship broken RAG: reading a ranked result set critically. Recall now answers real questions over Corpus A.</p>
+    <div class="chip-row">
+      <span class="chip level">🟡 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">Session 4 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:3">3-18 · top-k search</span>
+      <span class="a3" style="flex:5">18-40 · Build-along</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>From a store of vectors to an answer</h2>
+    </div>
+    <p class="lede">In b3 you loaded Recall's notes into a vector store. A store you never query is just an expensive filing cabinet. Retrieval is the query: it takes a natural-language question and returns the handful of chunks most likely to contain the answer, ordered best-first. Everything downstream - the prompt you build, the citations you show, the answer the model writes - is only as good as this ranked list. So we learn to build it, and to read it with a suspicious eye.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A working <code>retrieve(query, k)</code> function over Recall's Corpus A, the same call expressed through a real framework's retriever interface, and a repeatable habit for judging whether a result set is trustworthy - including a hand-computed hit rate you will lean on again in b9.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: TOP-K SIMILARITY SEARCH ============ -->
+  <section class="section" id="topk">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers top-k similarity search</span>
+      <h2>Top-k similarity search, end to end <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">Retrieval is four steps that never change: <strong>embed the query</strong> with the same model you used for the documents, <strong>score</strong> the query vector against every stored chunk with cosine similarity, <strong>sort</strong> those scores high to low, and <strong>take the top k</strong>. The vector database does the middle two fast; you supply the query and choose k.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A query vector is compared by cosine against every document vector, the scores are sorted high to low, and the top k are returned">
+        <style>
+          .b4kBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; rx: 8; }
+          .b4kQ { fill: #4C1D95; }
+          .b4kBar { fill: #8B5CF6; }
+          .b4kBarTop { fill: #6D28D9; }
+          .b4kL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b4kS { font: 600 12px Inter, sans-serif; fill: #6E6685; }
+          .b4kW { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b4kAx { stroke: #C7C0DA; stroke-width: 2; marker-end: url(#b4kAh); }
+          .b4kN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b4kAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#C7C0DA"/></marker>
+        </defs>
+        <rect class="b4kBox" x="30" y="120" width="150" height="60" rx="8"/>
+        <rect class="b4kQ" x="46" y="140" width="118" height="20" rx="4"/>
+        <text class="b4kW" x="105" y="155" text-anchor="middle">query vector</text>
+        <text class="b4kS" x="105" y="200" text-anchor="middle">"cloud spend cut?"</text>
+        <line class="b4kAx" x1="184" y1="150" x2="250" y2="150"/>
+        <text class="b4kL" x="330" y="60" text-anchor="middle">cosine vs every chunk</text>
+        <rect class="b4kBarTop" x="260" y="80" width="150" height="20" rx="4"/><text class="b4kW" x="270" y="95">A1 · 0.71</text>
+        <rect class="b4kBar" x="260" y="108" width="120" height="20" rx="4"/><text class="b4kW" x="270" y="123">A7 · 0.58</text>
+        <rect class="b4kBar" x="260" y="136" width="86" height="20" rx="4"/><text class="b4kW" x="270" y="151">A3 · 0.34</text>
+        <rect class="b4kBar" x="260" y="164" width="48" height="20" rx="4"/><text class="b4kS" x="316" y="179">A2 · 0.11</text>
+        <rect class="b4kBar" x="260" y="192" width="30" height="20" rx="4"/><text class="b4kS" x="298" y="207">A5 · 0.04</text>
+        <line class="b4kAx" x1="430" y1="150" x2="496" y2="150"/>
+        <text class="b4kL" x="600" y="60" text-anchor="middle">sort, then cut at k=3</text>
+        <rect class="b4kBox" x="510" y="80" width="200" height="120" rx="8"/>
+        <rect class="b4kBarTop" x="524" y="92" width="172" height="26" rx="4"/><text class="b4kW" x="534" y="110">#1  A1  0.71</text>
+        <rect class="b4kBar" x="524" y="124" width="172" height="26" rx="4"/><text class="b4kW" x="534" y="142">#2  A7  0.58</text>
+        <rect class="b4kBar" x="524" y="156" width="172" height="26" rx="4"/><text class="b4kW" x="534" y="174">#3  A3  0.34</text>
+        <text class="b4kS" x="610" y="196" text-anchor="middle" opacity="0">cut line</text>
+        <line x1="510" y1="150" x2="740" y2="150" stroke="#C6961A" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text class="b4kS" x="748" y="154">k cut</text>
+        <line class="b4kAx" x1="714" y1="150" x2="770" y2="150"/>
+        <text class="b4kL" x="800" y="146">to the</text>
+        <text class="b4kL" x="800" y="163">generator</text>
+        <rect x="30" y="300" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b4kN" x="54" y="312">Chunks below the k cut are discarded for this query - even if they were relevant. That is the risk k controls.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - embed, score, sort, take top-k: the whole retrieval move</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode self">Self-study</span>The retriever in a dozen lines of Python<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Written by hand, retrieval is exactly the four steps. Here it is over Corpus A - embed the query, cosine against every chunk, sort, slice:</p>
+        <div class="prompt-box good"><span class="label">Python · a top-k retriever from scratch</span>import numpy as np
+from openai import OpenAI
+
+client = OpenAI()
+
+def embed(texts):
+    resp = client.embeddings.create(model="text-embedding-3-small", input=texts)
+    return [np.array(d.embedding) for d in resp.data]
+
+def cosine(a, b):
+    return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
+
+# Corpus A - the MD's chief-of-staff notes
+docs = [
+    "In the Q2 board call the MD committed to cutting cloud spend by 15 percent.",
+    "The MD prefers aisle seats and never books red-eye flights.",
+    "Expenses over 500 dollars need a receipt photo and a business reason.",
+]
+doc_vecs = embed(docs)
+
+def retrieve(query, k=4):
+    q = embed([query])[0]
+    scored = [(cosine(q, v), doc) for v, doc in zip(doc_vecs, docs)]
+    scored.sort(reverse=True)          # highest cosine first
+    return scored[:k]                  # take the top k
+
+for score, doc in retrieve("what did the MD promise about cloud spend?"):
+    print(f"{score:.3f}  {doc}")</div>
+        <p>In production you never loop in Python - the vector store scores all chunks with an ANN index (b3). But the contract is identical: query in, ranked chunks out. If you can read this function, you can read any retriever.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The same call against a real vector store<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Every vector database ships a one-line version of the loop above. With Chroma you hand it the query text and how many results you want; it embeds and ranks for you:</p>
+        <div class="prompt-box good"><span class="label">Python · Chroma top-k query</span>import chromadb
+
+client = chromadb.Client()
+collection = client.get_or_create_collection("recall_corpus_a")
+
+# ... documents added in b3 ...
+
+results = collection.query(
+    query_texts=["what did the MD promise about cloud spend?"],
+    n_results=4,                       # this is your k
+)
+
+for doc, dist in zip(results["documents"][0], results["distances"][0]):
+    print(f"{dist:.3f}  {doc}")        # distance: smaller = closer</div>
+        <p>Note <code>n_results</code> is k, and Chroma returns a <em>distance</em> (smaller = more similar) rather than a cosine score (larger = more similar) - same ranking, flipped sign. Read your store's docs so you know which way "good" points.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Choosing k, and rank vs threshold<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>k is the one knob you own on day one, and it trades off two failures:</p>
+        <ul>
+          <li><strong>k too small</strong> - you miss relevant chunks that sat just below the cut. If the answer lived at #4 and k=3, the model never sees it. This is a silent failure: the answer looks confident and is simply incomplete.</li>
+          <li><strong>k too big</strong> - you drag in loosely related noise. That costs tokens (every chunk goes into the prompt), costs latency, and can distract the model into citing the wrong passage. More context is not more accuracy.</li>
+        </ul>
+        <p>A common starting point is k=4 and you tune from there against real questions. The second habit:</p>
+        <div class="callout tip">
+          <strong>Rank over absolute threshold</strong>
+          Do not hard-code "keep everything above cosine 0.8". Absolute scores drift by embedding model, by corpus, even by query length, so a fixed cutoff that works today breaks when you swap models. Trust the <em>ordering</em> - return the top k - and save the "is the best score good enough to answer at all?" question for the refusal logic in b7.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: RETRIEVER INTERFACE + READING RESULTS ============ -->
+  <section class="section" id="interface">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the retriever interface + reading results</span>
+      <h2>The retriever as a component, and how to read its output <span class="tag concept">6 min live</span></h2>
+    </div>
+    <p class="lede">Frameworks wrap that four-step move in a reusable object called a <strong>retriever</strong>: a component with one job - take a query string, hand back a ranked list of documents. Because the interface is fixed, you can swap what is behind it (a different store, hybrid search in b5, a reranker in b6) without touching the code that consumes the results. The generator just asks the retriever for chunks.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A retriever component sits between the query and the generator: it takes a query and returns ranked documents, and its internals can be swapped without changing the rest">
+        <style>
+          .b4rBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b4rCore { fill: #6D28D9; }
+          .b4rGen { fill: #4C1D95; }
+          .b4rL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b4rW { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b4rS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b4rAx { stroke: #8B5CF6; stroke-width: 2.5; marker-end: url(#b4rAh); fill: none; }
+          .b4rN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b4rAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <rect class="b4rBox" x="30" y="110" width="120" height="50" rx="8"/>
+        <text class="b4rL" x="90" y="140" text-anchor="middle">query</text>
+        <line class="b4rAx" x1="154" y1="135" x2="230" y2="135"/>
+        <rect class="b4rCore" x="234" y="70" width="230" height="150" rx="10"/>
+        <text class="b4rW" x="349" y="95" text-anchor="middle">retriever</text>
+        <rect class="b4rBox" x="252" y="108" width="194" height="30" rx="5"/><text class="b4rS" x="349" y="128" text-anchor="middle">embed query</text>
+        <rect class="b4rBox" x="252" y="144" width="194" height="30" rx="5"/><text class="b4rS" x="349" y="164" text-anchor="middle">score + sort in the store</text>
+        <rect class="b4rBox" x="252" y="180" width="194" height="30" rx="5"/><text class="b4rS" x="349" y="200" text-anchor="middle">return top-k docs</text>
+        <line class="b4rAx" x1="468" y1="135" x2="544" y2="135"/>
+        <text class="b4rS" x="506" y="126" text-anchor="middle">ranked docs</text>
+        <rect class="b4rGen" x="548" y="95" width="150" height="80" rx="10"/>
+        <text class="b4rW" x="623" y="132" text-anchor="middle">generator</text>
+        <text class="b4rS" x="623" y="152" text-anchor="middle">(the LLM)</text>
+        <text class="b4rS" x="349" y="245" text-anchor="middle">swap the internals - dense, hybrid, reranked - the interface never changes</text>
+        <rect x="30" y="270" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b4rN" x="54" y="282">One stable contract: query in, ranked documents out. That is why retrieval is pluggable.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the retriever is a swappable component feeding the generator</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>The LangChain retriever interface<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>In LangChain the vector store gives you two front doors. The direct one is <code>similarity_search</code>; the composable one is <code>.as_retriever()</code>, which returns an object any chain can call:</p>
+        <div class="prompt-box good"><span class="label">Python · LangChain similarity_search and .as_retriever</span>from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
+
+vector_store = Chroma(
+    collection_name="recall_corpus_a",
+    embedding_function=OpenAIEmbeddings(model="text-embedding-3-small"),
+)
+
+# direct call - returns the top 4 Documents, ranked
+docs = vector_store.similarity_search("what did the MD promise about cloud spend?", k=4)
+for d in docs:
+    print(d.page_content)
+
+# the same store as a reusable retriever component
+retriever = vector_store.as_retriever(search_kwargs={"k": 4})
+docs = retriever.invoke("travel seat preference")</div>
+        <p>Both do the identical four steps. <code>similarity_search(query, k=4)</code> is what you reach for while exploring; the retriever is what you wire into a chain so the rest of the pipeline never needs to know how retrieval happens.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Reading a ranked result set critically<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The habit that saves you weeks: never trust a retriever you have not eyeballed. For any query, ask three things of the ranked list:</p>
+        <ul>
+          <li><strong>Is #1 actually relevant?</strong> Read the top chunk. Does it genuinely address the question, or did it just share some vocabulary? A high score on the wrong chunk is worse than a low score on nothing.</li>
+          <li><strong>Is the right chunk anywhere in the top-k?</strong> Even if it is not #1, being at #2 or #3 is fine - the generator sees all k. Being absent is the failure that matters.</li>
+          <li><strong>How far did relevance fall off?</strong> If #1 is strong and #2-#4 are noise, a smaller k would be cleaner. If several are all plausible, you may be under-retrieving.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The demo that lied.</strong> A team (anonymized) shipped a support bot that looked great in the demo - every question returned a confident answer. When they finally read the top-k for 20 real tickets, the correct article was missing from the top-3 on nearly half of them; the model was fluently paraphrasing the wrong chunk. Nobody had looked at the ranked list. The fix was not a better model - it was measuring hit rate first.</p>
+        </div>
+        <p>That "is the right chunk in the top-k?" question, counted across many queries, is <strong>hit rate</strong> - the fraction of queries where the correct document lands in the top-k. It is the cheapest retrieval metric you have, and you can compute it by hand today.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>★ Build-along: vary the query, watch the ranking move<span class="mini">6 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is Recall answering over <strong>Corpus A</strong> with k=4. Type a question, hit Search, and read the ranked list the way Part 2 taught: is #1 right, is the correct note in the top-4, where does relevance drop off? Change a word and watch the cosine scores and the order shift.</p>
+        <div class="ragbox" data-corpus="A" data-k="4" data-caption="Change your query and watch the ranking + cosine scores shift"></div>
+        <div class="callout tip">
+          <strong>Honesty note - what this playground really does</strong>
+          To run with zero network calls, this tool uses a <em>simplified</em> lexical embedding: term frequency over a small vocabulary with a synonym map, computed the same way for notes and queries. A real embedding model is neural and far richer. But the mechanic you are grading - cosine ranking, take the top-k - is exactly what production retrieval does. You are reading real ranked output from a toy embedder.
+        </div>
+        <p>Try "what did the MD promise about cloud spend?" (should surface the Q2 board note), then "aisle or window?" (travel prefs), then something Corpus A cannot answer like "what is our AWS bill?" - and notice it still returns its best guess. Judging when a best guess is too weak to use is session b7.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG / EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · take it further</span>
+      <h2>Compute a hit rate by hand <span class="tag demo">★ 10 min · the playground above</span></h2>
+    </div>
+    <p class="lede">You do not need a framework to measure retrieval quality - you need five questions and honest eyes. Do this over the Corpus A playground and you will have your first evaluation number.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Write five questions</strong> you know Corpus A can answer, and for each note down which note (A1-A8) is the correct source. Example: "when does the daughter graduate?" → A8.</p></div>
+      <div class="step"><p><strong>Run each query</strong> with k set to 4 (or mentally take the top-3). For each, mark a ✓ if the correct note appears in the top-3, an ✗ if it does not.</p></div>
+      <div class="step"><p><strong>Compute hit rate</strong> = (number of ✓) / 5. Four out of five is 0.80. That single number is your baseline; every change you make later (chunking, hybrid, reranking) should move it up.</p></div>
+      <div class="step"><p><strong>Inspect the misses.</strong> For any ✗, read what did rank first. Was it a synonym collision? A too-short query? Write one sentence on why it missed - those sentences become your test cases in b9.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b4</strong>
+      Recall can now take a question and return the notes most likely to answer it, ranked best-first - and you can measure how often it gets the right note into the top-k. It retrieves. But it only searches by <em>meaning</em>: ask "which SEV1 incidents happened in March?" and pure similarity flounders. In b5 we give Recall metadata filters and hybrid search over Corpus B's incident tickets.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b5 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Take the from-scratch <code>retrieve(query, k)</code> function and run it against your own vector store from b3. Confirm that raising k from 2 to 6 changes which chunks come back and eyeball where the noise starts.</li>
+      <li>Rewrite the same query using <code>similarity_search(query, k=4)</code> and again through <code>.as_retriever().invoke(query)</code>. Confirm you get the same ranked documents - proving the interface is just a wrapper.</li>
+      <li>Compute a hit rate over ten of your own questions with k=3, then again with k=5. Note how hit rate rises with k while precision falls - the core k trade-off, in numbers.</li>
+      <li>Read: the LangChain "Retrieval" / retriever concept docs, and skim the LlamaIndex querying guide for how it names the same interface.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from official framework docs. This page covers ~80% of their working content on basic retrieval and the retriever interface - the hosted-infra and advanced-config parts stay with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">LangChain · RAG tutorial + Retrievers concept</span><span class="note">Part 1-2 · similarity_search(query, k=4) · .as_retriever() · the retriever as a component</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">LlamaIndex · Querying / query engine guide</span><span class="note">Part 2 · the same query-in, ranked-nodes-out interface under different names</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Chroma · query() / n_results</span><span class="note">Part 1 · collection.query(query_texts, n_results=k) · distance vs cosine</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What does "top-k" retrieval return?</p>
+      <button class="qopt" type="button">A · Every chunk whose cosine score is above 0.8</button>
+      <button class="qopt" type="button">B · The k passages with the highest cosine similarity to the query</button>
+      <button class="qopt" type="button">C · The k most recently added chunks</button>
+      <p class="qwhy">Top-k means score every chunk by cosine, sort high to low, and return the k highest - a ranking, not a fixed threshold.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · You set k too small. What is the likely failure?</p>
+      <button class="qopt" type="button">A · The prompt gets too long and the model times out</button>
+      <button class="qopt" type="button">B · Absolute cosine scores drift upward</button>
+      <button class="qopt" type="button">C · A relevant chunk that ranked just below the cut is dropped, so the answer is silently incomplete</button>
+      <p class="qwhy">Small k misses relevant chunks that sat below the cut; large k drags in noise and cost. k=4 is a common starting point you tune.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Hit rate for retrieval is...</p>
+      <button class="qopt" type="button">A · The fraction of queries where the correct document appears in the top-k</button>
+      <button class="qopt" type="button">B · The average cosine score of the top result</button>
+      <button class="qopt" type="button">C · How many queries per second the store can serve</button>
+      <p class="qwhy">Hit rate = fraction of queries whose correct document lands in the top-k. It is the cheapest retrieval metric and you can count it by hand.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 4 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The retrieval move</b><span>embed(query) → cosine vs every chunk → sort → take top-k. Never changes.</span></div>
+      <div class="cheat-item"><b>Top-k</b><span>Return the k highest-cosine passages. k is the knob you own on day one.</span></div>
+      <div class="cheat-item"><b>k trade-off</b><span>Small k = miss relevant chunks. Big k = noise + tokens + latency. Start at k=4.</span></div>
+      <div class="cheat-item"><b>Rank, not threshold</b><span>Trust the ordering. Absolute scores drift by model - do not hard-code a cutoff.</span></div>
+      <div class="cheat-item"><b>Retriever interface</b><span>A component: query in, ranked docs out. Swap the internals freely.</span></div>
+      <div class="cheat-item"><b>LangChain</b><span>vector_store.similarity_search(query, k=4) or .as_retriever().invoke(query).</span></div>
+      <div class="cheat-item"><b>Chroma</b><span>collection.query(query_texts=[q], n_results=k). Returns distance (smaller = closer).</span></div>
+      <div class="cheat-item"><b>Hit rate</b><span>Fraction of queries where the correct doc is in top-k. Your first eval number.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 4 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b3-vector-databases.html">← Prev: Vector databases</a> &nbsp;·&nbsp; <a href="b5-metadata-hybrid.html">Next: Metadata + hybrid retrieval →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

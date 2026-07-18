@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 5 · Metadata + hybrid retrieval - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 5 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 5 of 10</div>
+    <h1>Metadata and hybrid retrieval: <span class="accent">when meaning is not enough</span></h1>
+    <p class="sub">Pure semantic search is brilliant at "find me something about payment failures" and hopeless at "find me the SEV1 incidents from March". The first is about meaning; the second is about facts attached to the chunk - a severity, a date, a ticket id. This session gives Recall two tools it was missing: metadata where-filters that narrow retrieval by structured fields and time, and hybrid search that fuses dense semantic scores with sparse keyword/BM25 matching so exact tokens like INC-401 stop slipping through. Recall now works over Corpus B, a stream of dated, severity-tagged Jira incidents.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">Session 5 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-22 · Metadata + time</span>
+      <span class="a3" style="flex:4">22-40 · Hybrid</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The two questions similarity cannot answer</h2>
+    </div>
+    <p class="lede">Recall retrieves by meaning (b4). But real questions carry constraints that meaning ignores. "Which SEV1s happened in March?" is not asking what a chunk is <em>about</em> - it is asking for chunks whose severity field equals SEV1 and whose date falls in a range. And "what did INC-401 say?" needs an exact token match, not a fuzzy neighbour. Both break pure semantic search. The fixes are metadata filters and hybrid retrieval, and together they turn Recall from a topic finder into a query engine.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A Chroma retriever with a <code>where</code> filter that narrows Corpus B by severity and date, hands-on time combining a semantic query with a metadata filter in the live playground, and a clear mental model of hybrid dense+sparse search and the alpha lever that balances them.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: METADATA + TIME ============ -->
+  <section class="section" id="metadata">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers metadata where-filters + temporal queries</span>
+      <h2>Filtering by metadata and time <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">Every chunk in Corpus B carries structured metadata alongside its text: a <code>severity</code> (SEV1/SEV2/SEV3), a <code>date</code> (like 2026-03-14), a <code>ticket</code> id (INC-401). A metadata filter says "only consider chunks whose fields satisfy these conditions", and you apply it <strong>before or alongside</strong> the similarity search. The vector store still ranks by meaning - but only over the chunks that passed the filter.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A metadata where-filter removes chunks that fail the severity and date conditions, then similarity ranking runs only over the survivors">
+        <style>
+          .b5mBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b5mKeep { fill: #6D28D9; }
+          .b5mDrop { fill: #C7C0DA; }
+          .b5mL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b5mW { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b5mS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b5mAx { stroke: #8B5CF6; stroke-width: 2.5; marker-end: url(#b5mAh); fill: none; }
+          .b5mN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .b5mF { font: 700 12px Inter, sans-serif; fill: #4C1D95; }
+        </style>
+        <defs>
+          <marker id="b5mAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <text class="b5mL" x="120" y="40" text-anchor="middle">all chunks</text>
+        <rect class="b5mKeep" x="40" y="55" width="160" height="26" rx="4"/><text class="b5mW" x="50" y="73">INC-401 SEV1 03-14</text>
+        <rect class="b5mDrop" x="40" y="87" width="160" height="26" rx="4"/><text class="b5mS" x="50" y="105">INC-402 SEV3 03-14</text>
+        <rect class="b5mDrop" x="40" y="119" width="160" height="26" rx="4"/><text class="b5mS" x="50" y="137">INC-410 SEV2 03-22</text>
+        <rect class="b5mKeep" x="40" y="151" width="160" height="26" rx="4"/><text class="b5mW" x="50" y="169">INC-421 SEV1 04-18</text>
+        <rect class="b5mDrop" x="40" y="183" width="160" height="26" rx="4"/><text class="b5mS" x="50" y="201">INC-430 SEV3 05-06</text>
+        <rect class="b5mKeep" x="40" y="215" width="160" height="26" rx="4"/><text class="b5mW" x="50" y="233">INC-440 SEV1 06-01</text>
+        <line class="b5mAx" x1="210" y1="150" x2="300" y2="150"/>
+        <rect class="b5mBox" x="304" y="110" width="180" height="80" rx="10"/>
+        <text class="b5mF" x="394" y="140" text-anchor="middle">where filter</text>
+        <text class="b5mS" x="394" y="162" text-anchor="middle">severity = SEV1</text>
+        <text class="b5mS" x="394" y="180" text-anchor="middle">date $gte 2026-03-01</text>
+        <line class="b5mAx" x1="488" y1="150" x2="560" y2="150"/>
+        <text class="b5mL" x="690" y="40" text-anchor="middle">survivors, ranked by meaning</text>
+        <rect class="b5mKeep" x="580" y="90" width="230" height="26" rx="4"/><text class="b5mW" x="590" y="108">#1 INC-401 SEV1 03-14</text>
+        <rect class="b5mKeep" x="580" y="122" width="230" height="26" rx="4"/><text class="b5mW" x="590" y="140">#2 INC-421 SEV1 04-18</text>
+        <rect class="b5mKeep" x="580" y="154" width="230" height="26" rx="4"/><text class="b5mW" x="590" y="172">#3 INC-440 SEV1 06-01</text>
+        <text class="b5mS" x="690" y="200" text-anchor="middle">SEV2/SEV3 never entered the ranking</text>
+        <rect x="40" y="300" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b5mN" x="64" y="312">The filter runs first (or alongside): similarity only ever ranks chunks that passed the structured conditions.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a where-filter narrows the candidate set, then similarity ranks the survivors</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Why "which SEV1s happened in March?" breaks pure semantic search<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Embed that question and cosine it against the incidents. The words "SEV1" and "March" barely move the vector - the model latches onto "happened" and "incident" and cheerfully returns SEV3 tickets from May that <em>sound</em> similar. Meaning search has no concept of "severity equals SEV1" or "date within March"; those are facts, not topics.</p>
+        <ul>
+          <li><strong>Severity is a category, not a meaning.</strong> SEV1 and SEV3 tickets can read almost identically ("the service failed for N minutes"). Only the metadata distinguishes them.</li>
+          <li><strong>Time is a range, not a topic.</strong> "In March", "last quarter", "before the outage" are date comparisons. No embedding captures them reliably.</li>
+          <li><strong>The fix is structured.</strong> Attach the fields at index time, then filter on them at query time. Meaning search handles "what kind of incident"; the filter handles "which ones count".</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Chroma where-filters, including a date range<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Chroma takes a <code>where</code> dictionary on <code>query()</code>. Equality is the common case; the comparison operators let you express ranges - and <code>$and</code> combines conditions:</p>
+        <div class="prompt-box good"><span class="label">Python · Chroma query with a metadata where-filter</span>import chromadb
+
+client = chromadb.Client()
+collection = client.get_or_create_collection("recall_corpus_b")
+
+# ... incidents added in b3, each with metadata:
+#     {"ticket": "INC-401", "severity": "SEV1", "date": "2026-03-14"} ...
+
+# only SEV1 incidents
+results = collection.query(
+    query_texts=["payment failures at checkout"],
+    n_results=3,
+    where={"severity": "SEV1"},
+)
+
+# SEV1 incidents in March 2026 - combine conditions with $and,
+# and use $gte / $lte for the date range (dates stored as sortable strings)
+results = collection.query(
+    query_texts=["payment failures at checkout"],
+    n_results=3,
+    where={
+        "$and": [
+            {"severity": {"$eq": "SEV1"}},
+            {"date": {"$gte": "2026-03-01"}},
+            {"date": {"$lte": "2026-03-31"}},
+        ]
+    },
+)</div>
+        <p>The full operator set is <code>$eq $ne $gt $gte $lt $lte</code> for comparisons, <code>$in $nin</code> for membership, <code>$and $or</code> for logic, and <code>$contains $not_contains</code> for the document text itself. Store dates as sortable strings (ISO <code>YYYY-MM-DD</code>) or numbers so <code>$gte</code>/<code>$lte</code> compare the way you expect.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>★ Build-along: semantic query, then narrow with a filter<span class="mini">6 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is Recall over <strong>Corpus B</strong> - eight Jira incidents, each showing its date and severity chips. The metadata filter starts preset to <code>severity=SEV1</code>. Run a semantic query first with the filter cleared, then add it back and watch the result set narrow to just the SEV1s.</p>
+        <div class="ragbox" data-corpus="B" data-k="3" data-meta="date,severity" data-filter="severity=SEV1" data-caption="Type an incident query, then narrow with the metadata filter (e.g. severity=SEV1)"></div>
+        <div class="callout tip">
+          <strong>Honesty note - what this playground really does</strong>
+          The ranking uses a <em>simplified</em> lexical embedding (term frequency + synonyms, offline), the same one from b1, and the filter is a plain field match. Real systems use neural embeddings and a database index for the <code>where</code> clause. But the two-part shape you are practising - similarity to rank, metadata to constrain - is exactly the production mechanic. Cosine ranking is real; the embedder is a toy.
+        </div>
+        <p>Try "payment outage" with the filter empty, then with <code>severity=SEV1</code>: the SEV2/SEV3 tickets vanish from the results even when they scored well on meaning. That is the point - the filter overrides similarity for facts that similarity cannot see.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: HYBRID ============ -->
+  <section class="section" id="hybrid">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers hybrid dense + sparse/BM25 retrieval</span>
+      <h2>Hybrid retrieval: dense meaning plus sparse keywords <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">Dense (embedding) search finds meaning but blurs exact tokens - it may rank INC-401 and INC-440 as near-equal because they read alike, and it can miss an error code entirely. Sparse search (keyword / BM25) is the opposite: it nails exact strings like "INC-401" or "503" but is blind to paraphrase. <strong>Hybrid</strong> runs both and fuses their scores, so you get meaning and precision at once.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dense semantic scores and sparse BM25 keyword scores are combined by a weight alpha into one hybrid ranking">
+        <style>
+          .b5hBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b5hDense { fill: #6D28D9; }
+          .b5hSparse { fill: #C6961A; }
+          .b5hFuse { fill: #4C1D95; }
+          .b5hL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b5hW { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b5hS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b5hAx { stroke: #8B5CF6; stroke-width: 2.5; marker-end: url(#b5hAh); fill: none; }
+          .b5hN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b5hAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <rect class="b5hBox" x="30" y="120" width="130" height="50" rx="8"/>
+        <text class="b5hL" x="95" y="150" text-anchor="middle">query</text>
+        <line class="b5hAx" x1="164" y1="130" x2="230" y2="90"/>
+        <line class="b5hAx" x1="164" y1="160" x2="230" y2="205"/>
+        <rect class="b5hDense" x="234" y="55" width="220" height="60" rx="8"/>
+        <text class="b5hW" x="344" y="80" text-anchor="middle">dense · embeddings</text>
+        <text class="b5hS" x="344" y="101" text-anchor="middle" fill="#F5F3FF">captures meaning / paraphrase</text>
+        <rect class="b5hSparse" x="234" y="175" width="220" height="60" rx="8"/>
+        <text class="b5hW" x="344" y="200" text-anchor="middle" fill="#3A2A00">sparse · BM25 keywords</text>
+        <text class="b5hS" x="344" y="221" text-anchor="middle" fill="#3A2A00">captures exact tokens: INC-401, 503</text>
+        <line class="b5hAx" x1="458" y1="85" x2="540" y2="130"/>
+        <line class="b5hAx" x1="458" y1="205" x2="540" y2="160"/>
+        <rect class="b5hFuse" x="544" y="115" width="150" height="60" rx="10"/>
+        <text class="b5hW" x="619" y="140" text-anchor="middle">fuse by alpha</text>
+        <text class="b5hS" x="619" y="161" text-anchor="middle" fill="#F5F3FF">score = a·dense + (1-a)·sparse</text>
+        <line class="b5hAx" x1="698" y1="145" x2="770" y2="145"/>
+        <text class="b5hL" x="810" y="141" text-anchor="middle">one</text>
+        <text class="b5hL" x="810" y="158" text-anchor="middle">ranking</text>
+        <text class="b5hS" x="300" y="270" text-anchor="middle">alpha = 1.0 pure dense · 0.5 even hybrid · 0.0 pure sparse</text>
+        <rect x="30" y="292" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b5hN" x="54" y="304">Dense for "what it means", sparse for "the exact string". Alpha is the dial between them.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - hybrid fuses dense and sparse scores with a convex weight alpha</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why hybrid, and what the alpha lever does<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The two retrievers fail in opposite directions, which is exactly why fusing them wins:</p>
+        <ul>
+          <li><strong>Dense misses exact tokens.</strong> Ask for "INC-401" and an embedding may rank several similar-sounding tickets ahead of the one you named, because the id is just a few characters in a sea of meaning. Error codes, SKUs, ticket ids, function names - all weak spots for pure dense.</li>
+          <li><strong>Sparse misses meaning.</strong> BM25 scores by keyword overlap, so "money back" never matches a passage titled "Refunds" - the classic failure from b1. It cannot see paraphrase.</li>
+          <li><strong>Alpha fuses them.</strong> Hybrid combines the two scores with a convex weight <code>alpha</code> in [0, 1]: <code>score = alpha · dense + (1 - alpha) · sparse</code>. alpha=1.0 is pure dense, alpha=0.0 is pure sparse, alpha=0.5 weighs them evenly. You tune alpha toward sparse when exact tokens matter (incident ids, codes) and toward dense when questions are conversational.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The ticket id that vanished.</strong> A support team (anonymized) let engineers search runbooks by pasting an incident id. Pure semantic search kept surfacing thematically similar incidents and burying the exact one - "INC-401" ranked fourth behind three lookalikes. Turning on hybrid and nudging alpha toward sparse put the exact ticket back at the top without losing the paraphrase queries. One dial, both behaviours.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Turning on hybrid in practice<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Hybrid is a first-class feature in most managed vector databases. In Pinecone you send both a dense vector and a sparse vector and set an alpha weight; the pattern generalizes across stores:</p>
+        <div class="prompt-box good"><span class="label">Python · hybrid query with an alpha weight (Pinecone-style)</span>def scale(dense, sparse, alpha):
+    # alpha in [0, 1]: 1.0 = pure dense, 0.0 = pure sparse
+    if not 0 &lt;= alpha &lt;= 1:
+        raise ValueError("alpha must be between 0 and 1")
+    ds = [v * alpha for v in dense]
+    ss = {"indices": sparse["indices"],
+          "values": [v * (1 - alpha) for v in sparse["values"]]}
+    return ds, ss
+
+dense_q, sparse_q = scale(dense_vec, sparse_vec, alpha=0.4)   # lean toward keywords
+
+results = index.query(
+    top_k=3,
+    vector=dense_q,
+    sparse_vector=sparse_q,
+    include_metadata=True,
+)</div>
+        <p>The exact API differs by store, but the idea is universal: supply a dense score and a sparse score, and hand the engine a single alpha that says how much to trust each. Sweep alpha on your own eval set - there is no globally correct value.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG / EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · take it further</span>
+      <h2>Find a query only a filter can answer <span class="tag demo">★ 10 min · the Corpus B playground</span></h2>
+    </div>
+    <p class="lede">The sharpest way to feel why metadata matters is to find a question that similarity gets wrong and the filter gets right. Do this over the Corpus B playground above.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Run a semantic-only query.</strong> Clear the filter and search something like "which incidents were the most severe?". Read the top-3 and note whether SEV3 or SEV2 tickets sneak in despite the question being about severity.</p></div>
+      <div class="step"><p><strong>Add the filter.</strong> Set the metadata filter to <code>severity=SEV1</code> and run the same query. Confirm the non-SEV1 tickets drop out entirely, even ones that scored well on meaning.</p></div>
+      <div class="step"><p><strong>Find the filter-only win.</strong> Craft a query where semantic search alone returns the wrong severity or wrong time period, but the filter fixes it. Write both the query and why meaning failed - "severity is a category, not a topic" is a good starting sentence.</p></div>
+      <div class="step"><p><strong>Reflect on hybrid.</strong> The playground is dense-only, so try to name a Corpus B query where you would want sparse/BM25 too - a search for an exact ticket id like INC-410 is the obvious one. Note why dense alone would rank it poorly.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b5</strong>
+      Recall can now filter by structured facts - severity, date ranges, ticket ids - and you understand how hybrid search fuses dense meaning with sparse keyword precision through the alpha lever. It answers "which SEV1s in March?" instead of guessing. But even a filtered, hybrid top-k can put a mediocre chunk at #1. In b6 we add reranking: retrieve wide, then use a cross-encoder to reorder the candidates so the truly best chunk rises to the top.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b6 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Add metadata to your own Corpus B collection (severity, date as an ISO string) and run three <code>where</code> queries: one <code>$eq</code>, one <code>$in</code> over two severities, and one <code>$gte</code>/<code>$lte</code> date range wrapped in <code>$and</code>.</li>
+      <li>Write a query that returns the wrong answer with no filter and the right answer with a filter. Save the pair - it is a metadata test case for b9.</li>
+      <li>If your store supports hybrid, sweep alpha across 0.0, 0.5, 1.0 for a query that names an exact ticket id, and record which alpha ranks the exact ticket first.</li>
+      <li>Read: the Chroma metadata-filtering docs (operator list) and the Pinecone hybrid-search guide (dense + sparse, alpha weighting).</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from official vector-database docs. This page covers ~80% of their working content on metadata filtering and hybrid search - the hosted-index setup and billing details stay with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Chroma · Metadata filtering (where)</span><span class="note">Part 1 · $eq $ne $gt $gte $lt $lte $in $nin $and $or $contains · query(where={...})</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Pinecone · Hybrid search (dense + sparse)</span><span class="note">Part 2 · dense + sparse/BM25 fused by a convex weight alpha in [0,1]</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · Why does pure semantic search struggle with "which SEV1 incidents happened in March?"</p>
+      <button class="qopt" type="button">A · Embedding models cannot process questions, only statements</button>
+      <button class="qopt" type="button">B · The corpus is too small for cosine similarity to work</button>
+      <button class="qopt" type="button">C · Severity and date are structured facts, not topics - meaning search has no notion of "severity=SEV1" or a date range</button>
+      <p class="qwhy">SEV1 and a date range are metadata conditions. You filter on the fields (where + $gte/$lte) and let similarity rank only the survivors.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · In hybrid retrieval, what does an alpha of 1.0 mean?</p>
+      <button class="qopt" type="button">A · Pure dense (semantic) - the sparse/BM25 score is ignored</button>
+      <button class="qopt" type="button">B · Pure sparse (keyword) - the dense score is ignored</button>
+      <button class="qopt" type="button">C · The results are randomly shuffled</button>
+      <p class="qwhy">score = alpha·dense + (1-alpha)·sparse. alpha=1.0 is pure dense, 0.0 is pure sparse, 0.5 is an even hybrid.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · Sparse/BM25 retrieval is especially good at...</p>
+      <button class="qopt" type="button">A · Matching paraphrases that share no words</button>
+      <button class="qopt" type="button">B · Matching exact tokens like error codes and ticket ids (INC-401, 503)</button>
+      <button class="qopt" type="button">C · Ignoring keywords entirely and ranking by meaning</button>
+      <p class="qwhy">Sparse/BM25 scores by exact keyword overlap - great for ids and codes, blind to paraphrase. Dense is the reverse; hybrid fuses both.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 5 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Metadata filter</b><span>Narrow retrieval by structured fields before/with similarity. Meaning ranks the survivors.</span></div>
+      <div class="cheat-item"><b>When you need it</b><span>Category or time questions: "SEV1s in March". Similarity cannot see facts.</span></div>
+      <div class="cheat-item"><b>Chroma where</b><span>query(query_texts=[q], n_results=k, where={...}). $eq $ne $gt $gte $lt $lte $in $nin $and $or.</span></div>
+      <div class="cheat-item"><b>Date ranges</b><span>Store ISO strings; $gte + $lte inside $and. Sortable strings compare correctly.</span></div>
+      <div class="cheat-item"><b>Dense vs sparse</b><span>Dense = meaning/paraphrase. Sparse/BM25 = exact tokens (ids, codes). Opposite blind spots.</span></div>
+      <div class="cheat-item"><b>Hybrid</b><span>Fuse both scores: score = alpha·dense + (1-alpha)·sparse.</span></div>
+      <div class="cheat-item"><b>Alpha lever</b><span>1.0 pure dense · 0.5 even · 0.0 pure sparse. Toward sparse for exact ids.</span></div>
+      <div class="cheat-item"><b>Tune, do not guess</b><span>Sweep alpha on your own eval set - no globally correct value.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 5 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b4-retrieval-basics.html">← Prev: Retrieval basics</a> &nbsp;·&nbsp; <a href="b6-reranking.html">Next: Reranking →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

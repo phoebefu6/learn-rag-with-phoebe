@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>learn RAG with phoebe - a two-track course on retrieval that grounds</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+<style>
+  .stats-row { display: flex; gap: 2.4rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .stat b { display: block; font-size: 2.1rem; font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: .72rem; opacity: .85; text-transform: uppercase; letter-spacing: .09em; font-weight: 600; }
+
+  .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
+  .course-card {
+    border: 1px solid var(--hairline);
+    border-top: 4px solid var(--diff, var(--indigo));
+    border-radius: var(--radius);
+    padding: 1.2rem 1.3rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    text-decoration: none;
+    color: var(--ink);
+    background: #fff;
+    transition: box-shadow .15s ease, border-color .15s ease, transform .15s ease;
+    position: relative;
+  }
+  .course-card:hover { border-color: var(--indigo-soft); border-top-color: var(--diff, var(--indigo)); box-shadow: 0 8px 28px rgba(76,29,149,.14); transform: translateY(-3px); }
+  .course-card .cicon { font-size: 1.7rem; line-height: 1; }
+  .course-card .cnum { font-size: .72rem; font-weight: 700; color: var(--indigo); text-transform: uppercase; letter-spacing: .1em; }
+  .course-card h3 { font-size: 1.05rem; font-weight: 800; line-height: 1.3; }
+  .course-card p { font-size: .85rem; color: var(--muted); flex: 1; }
+  .course-card .meta { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+  .diff-legend { display: flex; gap: 1rem; margin-top: 1.6rem; font-size: .74rem; color: var(--muted); font-weight: 600; flex-wrap: wrap; }
+  .diff-legend i { display: inline-block; width: .85rem; height: .35rem; border-radius: 999px; margin-right: .35rem; vertical-align: middle; }
+
+  .paths { margin-top: 2.6rem; }
+  .paths h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .3rem; }
+  .paths .plede { color: var(--muted); font-size: .92rem; margin-bottom: .8rem; }
+  .path { display: flex; gap: .55rem; align-items: center; padding: .75rem 0; border-bottom: .5px solid var(--hairline); flex-wrap: wrap; }
+  .path:last-child { border-bottom: none; }
+  .path b { min-width: 15.5rem; font-size: .9rem; }
+  .path .pstep { background: var(--indigo-50); color: var(--indigo); border-radius: 999px; padding: .16rem .68rem; font-weight: 700; font-size: .8rem; text-decoration: none; transition: all .12s ease; }
+  .path .pstep:hover { background: var(--indigo); color: #fff; }
+  .path .parr { color: var(--faint); font-weight: 700; }
+
+  .corpus-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .8rem; margin-top: 1.3rem; }
+  .corpus-card { border: 1px solid var(--hairline); border-left: 4px solid var(--indigo); border-radius: var(--radius); padding: .9rem 1.05rem; background: linear-gradient(180deg,#fff,var(--indigo-50)); }
+  .corpus-card .ctag { font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--indigo); }
+  .corpus-card h4 { font-size: .98rem; font-weight: 800; margin: .15rem 0 .3rem; }
+  .corpus-card p { font-size: .82rem; color: var(--muted); line-height: 1.55; }
+
+  .mm-section { margin-top: 1.6rem; }
+  .mm-section h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: .2rem; }
+  .mm-section .mm-lede { color: var(--muted); font-size: .92rem; margin-bottom: .4rem; }
+  .mm-wrap { border: 1px solid var(--hairline); border-radius: var(--radius); background: linear-gradient(180deg,#fff,#F4F2FD); padding: .6rem; overflow-x: auto; }
+  .mm-svg { width: 100%; height: auto; display: block; max-width: 60rem; margin: 0 auto; min-width: 34rem; }
+  .mm-link { cursor: pointer; text-decoration: none; }
+  .mm-node rect { transition: opacity .15s ease, filter .15s ease; }
+  .mm-node text { pointer-events: none; }
+  .mm-link:hover .mm-node rect { filter: brightness(1.06); }
+  .mm-edge { transition: opacity .15s ease; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe</div>
+    <h1>Two tracks from "what is retrieval" to a RAG system you can trust</h1>
+    <p class="sub">Retrieval-augmented generation is how you make an LLM answer from YOUR documents instead of guessing. A leader track teaches what RAG is, when it pays off, and how to judge one - no code. A builder track grows a real retrieval assistant across three escalating corpora: embeddings, chunking, a vector database, hybrid retrieval, reranking, grounding with citations, and evaluation. Taught from the official docs and short courses. Feeds straight into learn-langchain-with-phoebe.</p>
+    <div class="stats-row">
+      <div class="stat"><b data-count="2">2</b><span>tracks</span></div>
+      <div class="stat"><b data-count="16">16</b><span>sessions</span></div>
+      <div class="stat"><b data-count="3">3</b><span>escalating corpora</span></div>
+      <div class="stat"><b data-count="45">45</b><span>min per session</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="section">
+    <div class="paths" style="margin-top:0">
+      <h2>The leader track 🤝 <span style="font-size:.85rem;font-weight:600;color:var(--muted)">· for C-level, managers &amp; curious minds · 6 x 45 min · no code, ever</span></h2>
+      <p class="plede">Thinking mode: what RAG actually is, when it beats fine-tuning, what it costs, how to judge whether a RAG system is trustworthy, and how to govern it - each session ends with questions to ask your data team.</p>
+    </div>
+    <div class="course-grid">
+      <a class="course-card" href="courses/a1-what-rag-is.html" style="--diff:#34D399">
+        <span class="cicon">🎯</span>
+        <span class="cnum">Leader 1 · easy</span>
+        <h3>What RAG is, and why it beats a bigger prompt</h3>
+        <p>Retrieval in plain English, RAG vs fine-tuning vs long-context, and the one question that tells you when RAG pays off.</p>
+        <span class="meta"><span class="pill amber">▶ Leaders start here</span></span>
+      </a>
+      <a class="course-card" href="courses/a2-anatomy.html" style="--diff:#34D399">
+        <span class="cicon">🧩</span>
+        <span class="cnum">Leader 2 · easy</span>
+        <h3>Anatomy of a RAG system</h3>
+        <p>The nine moving parts you fund - ingest, chunk, embed, store, retrieve, rerank, generate, cite, evaluate - each as the question it lets you ask.</p>
+        <span class="meta"><span class="pill light">The whole pipeline</span></span>
+      </a>
+      <a class="course-card" href="courses/a3-cost-quality.html" style="--diff:#FBBF24">
+        <span class="cicon">💰</span>
+        <span class="cnum">Leader 3 · medium</span>
+        <h3>Cost vs quality: the real tradeoffs</h3>
+        <p>Where money goes, where quality is won, build vs buy, and the levers that move accuracy without moving the bill much.</p>
+        <span class="meta"><span class="pill light">Investment view</span></span>
+      </a>
+      <a class="course-card" href="courses/a4-judge-a-rag.html" style="--diff:#FBBF24">
+        <span class="cicon">📊</span>
+        <span class="cnum">Leader 4 · medium</span>
+        <h3>How to judge a RAG system</h3>
+        <p>Groundedness, citations, hallucination, retrieval quality - the RAG Triad scorecard you demand before you trust an answer.</p>
+        <span class="meta"><span class="pill light">Scorecard session</span></span>
+      </a>
+      <a class="course-card" href="courses/a5-risk-governance.html" style="--diff:#FB923C">
+        <span class="cicon">🛡️</span>
+        <span class="cnum">Leader 5 · deciding</span>
+        <h3>Risk &amp; governance</h3>
+        <p>PII in embeddings, who-can-retrieve-what, stale answers, vendor lock-in, and refusal as a control you can insist on.</p>
+        <span class="meta"><span class="pill light">Governance exercise</span></span>
+      </a>
+      <a class="course-card" href="courses/a6-poc-to-prod.html" style="--diff:#FB923C">
+        <span class="cicon">🗺️</span>
+        <span class="cnum">Leader 6 · deciding</span>
+        <h3>From POC to production</h3>
+        <p>The roadmap, the team, RAG vs agents, and where retrieval is heading in 2026 - contextual retrieval and agentic RAG.</p>
+        <span class="meta"><span class="pill light">Roadmap exercise</span></span>
+      </a>
+    </div>
+
+    <div class="paths">
+      <h2>The builder track 🛠️ <span style="font-size:.85rem;font-weight:600;color:var(--muted)">· for practitioners · 10 x 45 min · Python + a browser playground</span></h2>
+      <p class="plede">One growing artifact: <strong>Recall</strong>, a retrieval assistant. Every session upgrades the same system - and every idea is felt in the in-browser playground first, so the vector database never gets to be magic.</p>
+    </div>
+    <div class="course-grid">
+      <a class="course-card" href="courses/b1-embeddings.html" style="--diff:#34D399">
+        <span class="cicon">🔢</span>
+        <span class="cnum">Builder 1 · easy</span>
+        <h3>Embeddings 101</h3>
+        <p>What a vector is, why cosine similarity ranks meaning, and why questions rarely share words with their answers. Live playground.</p>
+        <span class="meta"><span class="pill amber">▶ Builders start here</span></span>
+      </a>
+      <a class="course-card" href="courses/b2-chunking.html" style="--diff:#34D399">
+        <span class="cicon">✂️</span>
+        <span class="cnum">Builder 2 · easy</span>
+        <h3>Chunking strategies</h3>
+        <p>Fixed, recursive, semantic, sentence-window, parent-document - size and overlap, and why a bad chunk sinks good retrieval.</p>
+        <span class="meta"><span class="pill light">Recall indexes Corpus A</span></span>
+      </a>
+      <a class="course-card" href="courses/b3-vector-databases.html" style="--diff:#FBBF24">
+        <span class="cicon">🗄️</span>
+        <span class="cnum">Builder 3 · medium</span>
+        <h3>Vector databases</h3>
+        <p>Chroma end to end - client, collection, add, query - then the pgvector and FAISS deltas, and HNSW vs IVF vs flat.</p>
+        <span class="meta"><span class="pill light">Recall gets a store</span></span>
+      </a>
+      <a class="course-card" href="courses/b4-retrieval-basics.html" style="--diff:#FBBF24">
+        <span class="cicon">🔎</span>
+        <span class="cnum">Builder 4 · medium</span>
+        <h3>Retrieval basics</h3>
+        <p>top-k similarity search, the retriever interface, and how to read a ranked result set with a critical eye.</p>
+        <span class="meta"><span class="pill light">Recall answers questions</span></span>
+      </a>
+      <a class="course-card" href="courses/b5-metadata-hybrid.html" style="--diff:#FB923C">
+        <span class="cicon">🏷️</span>
+        <span class="cnum">Builder 5 · hands-on</span>
+        <h3>Metadata + hybrid retrieval</h3>
+        <p>where-filters, temporal queries over dated incidents, and dense + sparse/BM25 hybrid with the alpha lever.</p>
+        <span class="meta"><span class="pill light">Recall reads Corpus B</span></span>
+      </a>
+      <a class="course-card" href="courses/b6-reranking.html" style="--diff:#FB923C">
+        <span class="cicon">🎚️</span>
+        <span class="cnum">Builder 6 · hands-on</span>
+        <h3>Reranking</h3>
+        <p>Bi-encoder vs cross-encoder, retrieve-wide-then-rerank-narrow, MMR diversity, and query expansion / HyDE.</p>
+        <span class="meta"><span class="pill light">Recall gets precise</span></span>
+      </a>
+      <a class="course-card" href="courses/b7-grounding-citations.html" style="--diff:#FB923C">
+        <span class="cicon">📎</span>
+        <span class="cnum">Builder 7 · hands-on</span>
+        <h3>Grounding &amp; citations</h3>
+        <p>Answer only from context, cite the source, and the refuse-when-unknown guardrail that kills the confident wrong answer.</p>
+        <span class="meta"><span class="pill light">Recall reads Corpus C</span></span>
+      </a>
+      <a class="course-card" href="courses/b8-full-pipeline.html" style="--diff:#F87171">
+        <span class="cicon">🔗</span>
+        <span class="cnum">Builder 8 · hardest</span>
+        <h3>The full pipeline</h3>
+        <p>Wire retrieve → augment → generate with the Claude API, and stream one cited, grounded answer end to end.</p>
+        <span class="meta"><span class="pill light">Recall ships v1</span></span>
+      </a>
+      <a class="course-card" href="courses/b9-evaluation.html" style="--diff:#F87171">
+        <span class="cicon">🧪</span>
+        <span class="cnum">Builder 9 · hardest</span>
+        <h3>RAG evaluation</h3>
+        <p>A golden set, faithfulness, answer relevancy, context precision and recall, hit-rate and MRR, and the LLM-as-judge.</p>
+        <span class="meta"><span class="pill light">Recall gets a scorecard</span></span>
+      </a>
+      <a class="course-card" href="courses/b10-production.html" style="--diff:#F87171">
+        <span class="cicon">🚀</span>
+        <span class="cnum">Builder 10 · hardest</span>
+        <h3>Production RAG</h3>
+        <p>Re-indexing and freshness, caching, the latency budget, monitoring, and cost - then the handoff to LangChain.</p>
+        <span class="meta"><span class="pill light">Recall graduates</span></span>
+      </a>
+    </div>
+    <div class="diff-legend">
+      <span><i style="background:#34D399"></i>easy - everyone</span>
+      <span><i style="background:#FBBF24"></i>medium</span>
+      <span><i style="background:#FB923C"></i>hands-on / deciding</span>
+      <span><i style="background:#F87171"></i>hardest</span>
+    </div>
+
+    <div class="paths">
+      <h2>The running project: three escalating corpora 📚</h2>
+      <p class="plede">The builder track grows one assistant, Recall, over the same three document sets - each harder to retrieve well than the last.</p>
+      <div class="corpus-strip">
+        <div class="corpus-card">
+          <span class="ctag">Corpus A · Personal</span>
+          <h4>An MD's chief-of-staff notes</h4>
+          <p>Emails, board notes, travel prefs. Pure semantic search: "what did I commit to in the Q2 board call?" Sessions b1-b4.</p>
+        </div>
+        <div class="corpus-card">
+          <span class="ctag">Corpus B · Product / Ops</span>
+          <h4>Dated Jira incident tickets</h4>
+          <p>Each ticket has a date and a severity. Now retrieval needs metadata and time: "what SEV1s happened in March?" Sessions b5-b6.</p>
+        </div>
+        <div class="corpus-card">
+          <span class="ctag">Corpus C · Company KB</span>
+          <h4>A help-center for a support bot</h4>
+          <p>Policy articles a customer bot answers from - grounded, cited, and willing to say "I don't know". Sessions b7-b10.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="paths">
+      <h2>Choose your path 🗺️</h2>
+      <p class="plede">Two doors, one course. Leaders never see code; builders never sit through theory they have not first felt in the playground.</p>
+      <div class="path"><b>🤝 Leader (no code, ever)</b>
+        <a class="pstep" href="courses/a1-what-rag-is.html">a1</a><span class="parr">→</span>
+        <a class="pstep" href="courses/a2-anatomy.html">a2</a><span class="parr">→</span>
+        <a class="pstep" href="courses/a3-cost-quality.html">a3</a><span class="parr">→</span>
+        <a class="pstep" href="courses/a4-judge-a-rag.html">a4</a><span class="parr">→</span>
+        <a class="pstep" href="courses/a5-risk-governance.html">a5</a><span class="parr">→</span>
+        <a class="pstep" href="courses/a6-poc-to-prod.html">a6</a>
+      </div>
+      <div class="path"><b>🛠️ Builder (grow Recall)</b>
+        <a class="pstep" href="courses/b1-embeddings.html">b1</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b2-chunking.html">b2</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b3-vector-databases.html">b3</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b4-retrieval-basics.html">b4</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b5-metadata-hybrid.html">b5</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b6-reranking.html">b6</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b7-grounding-citations.html">b7</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b8-full-pipeline.html">b8</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b9-evaluation.html">b9</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b10-production.html">b10</a>
+      </div>
+      <div class="path"><b>🌱 Curious follower (a taste)</b>
+        <a class="pstep" href="courses/a1-what-rag-is.html">a1</a><span class="parr">→</span>
+        <a class="pstep" href="courses/a4-judge-a-rag.html">a4</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b1-embeddings.html">b1</a>
+      </div>
+      <div class="path"><b>🚀 Full journey (lead AND build)</b>
+        <a class="pstep" href="courses/a1-what-rag-is.html">a1-a6</a><span class="parr">→</span>
+        <a class="pstep" href="courses/b1-embeddings.html">b1-b10</a><span class="parr">→</span>
+        <a class="pstep" href="https://phoebefu6.github.io/learn-langchain-with-phoebe/">LangChain ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section mm-section">
+    <h2>The knowledge map 🧠</h2>
+    <p class="mm-lede">Both tracks at a glance - hover a session to spotlight its concepts, click any node to jump in.</p>
+    <div class="mm-wrap"><div id="mindmap"></div></div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>learn-rag-with-phoebe · by Phoebe Fu · sources: Anthropic, OpenAI &amp; DeepLearning.AI RAG courses + Chroma, pgvector, Pinecone, Weaviate, RAGAS docs</span>
+  </footer>
+</main>
+
+<script>
+window.MINDMAP_DATA = {
+  title: "Learn\nRAG",
+  centerColor: "#4C1D95",
+  sessions: [
+    { label: "What RAG\nis", href: "courses/a1-what-rag-is.html", color: "#34D399",
+      concepts: [
+        { label: "Retrieve-augment-generate", href: "courses/a1-what-rag-is.html" },
+        { label: "RAG vs fine-tune", href: "courses/a1-what-rag-is.html" },
+        { label: "When it pays off", href: "courses/a1-what-rag-is.html" } ] },
+    { label: "Anatomy", href: "courses/a2-anatomy.html", color: "#34D399",
+      concepts: [
+        { label: "Nine moving parts", href: "courses/a2-anatomy.html" },
+        { label: "Index vs query time", href: "courses/a2-anatomy.html" } ] },
+    { label: "Cost vs\nquality", href: "courses/a3-cost-quality.html", color: "#FBBF24",
+      concepts: [
+        { label: "Where money goes", href: "courses/a3-cost-quality.html" },
+        { label: "Build vs buy", href: "courses/a3-cost-quality.html" } ] },
+    { label: "Judge a\nRAG", href: "courses/a4-judge-a-rag.html", color: "#FBBF24",
+      concepts: [
+        { label: "RAG Triad", href: "courses/a4-judge-a-rag.html" },
+        { label: "Groundedness", href: "courses/a4-judge-a-rag.html" },
+        { label: "The scorecard", href: "courses/a4-judge-a-rag.html" } ] },
+    { label: "Risk +\ngovernance", href: "courses/a5-risk-governance.html", color: "#FB923C",
+      concepts: [
+        { label: "PII in embeddings", href: "courses/a5-risk-governance.html" },
+        { label: "Access control", href: "courses/a5-risk-governance.html" },
+        { label: "Refusal as control", href: "courses/a5-risk-governance.html" } ] },
+    { label: "POC to\nprod", href: "courses/a6-poc-to-prod.html", color: "#FB923C",
+      concepts: [
+        { label: "The roadmap", href: "courses/a6-poc-to-prod.html" },
+        { label: "RAG vs agents", href: "courses/a6-poc-to-prod.html" },
+        { label: "2026 outlook", href: "courses/a6-poc-to-prod.html" } ] },
+    { label: "Embeddings\n101", href: "courses/b1-embeddings.html", color: "#34D399",
+      concepts: [
+        { label: "Vectors", href: "courses/b1-embeddings.html" },
+        { label: "Cosine similarity", href: "courses/b1-embeddings.html" },
+        { label: "Picking a model", href: "courses/b1-embeddings.html" } ] },
+    { label: "Chunking", href: "courses/b2-chunking.html", color: "#34D399",
+      concepts: [
+        { label: "Fixed vs recursive", href: "courses/b2-chunking.html" },
+        { label: "Semantic + window", href: "courses/b2-chunking.html" },
+        { label: "Size + overlap", href: "courses/b2-chunking.html" } ] },
+    { label: "Vector\ndatabases", href: "courses/b3-vector-databases.html", color: "#FBBF24",
+      concepts: [
+        { label: "Chroma", href: "courses/b3-vector-databases.html" },
+        { label: "pgvector + FAISS", href: "courses/b3-vector-databases.html" },
+        { label: "HNSW vs IVF", href: "courses/b3-vector-databases.html" } ] },
+    { label: "Retrieval\nbasics", href: "courses/b4-retrieval-basics.html", color: "#FBBF24",
+      concepts: [
+        { label: "top-k search", href: "courses/b4-retrieval-basics.html" },
+        { label: "Retriever interface", href: "courses/b4-retrieval-basics.html" } ] },
+    { label: "Metadata +\nhybrid", href: "courses/b5-metadata-hybrid.html", color: "#FB923C",
+      concepts: [
+        { label: "where-filters", href: "courses/b5-metadata-hybrid.html" },
+        { label: "Temporal queries", href: "courses/b5-metadata-hybrid.html" },
+        { label: "Dense + BM25", href: "courses/b5-metadata-hybrid.html" } ] },
+    { label: "Reranking", href: "courses/b6-reranking.html", color: "#FB923C",
+      concepts: [
+        { label: "Cross-encoder", href: "courses/b6-reranking.html" },
+        { label: "Retrieve-then-rerank", href: "courses/b6-reranking.html" },
+        { label: "Query expansion", href: "courses/b6-reranking.html" } ] },
+    { label: "Grounding +\ncitations", href: "courses/b7-grounding-citations.html", color: "#FB923C",
+      concepts: [
+        { label: "Answer from context", href: "courses/b7-grounding-citations.html" },
+        { label: "Citations", href: "courses/b7-grounding-citations.html" },
+        { label: "Refuse when unknown", href: "courses/b7-grounding-citations.html" } ] },
+    { label: "Full\npipeline", href: "courses/b8-full-pipeline.html", color: "#F87171",
+      concepts: [
+        { label: "Retrieve-augment-generate", href: "courses/b8-full-pipeline.html" },
+        { label: "Claude API", href: "courses/b8-full-pipeline.html" } ] },
+    { label: "Evaluation", href: "courses/b9-evaluation.html", color: "#F87171",
+      concepts: [
+        { label: "Golden set", href: "courses/b9-evaluation.html" },
+        { label: "Faithfulness", href: "courses/b9-evaluation.html" },
+        { label: "Precision + recall", href: "courses/b9-evaluation.html" } ] },
+    { label: "Production", href: "courses/b10-production.html", color: "#F87171",
+      concepts: [
+        { label: "Freshness + re-index", href: "courses/b10-production.html" },
+        { label: "Latency + cost", href: "courses/b10-production.html" },
+        { label: "Hands off to LangChain", href: "courses/b10-production.html" } ] }
+  ]
+};
+</script>
+<script src="assets/mindmap.js?v=1"></script>
+<script src="assets/app.js?v=1"></script>
+</body>
+</html>

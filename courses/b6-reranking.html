@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 6 · Reranking - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 6 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 6 of 10</div>
+    <h1>Reranking: <span class="accent">retrieve wide, then get precise</span></h1>
+    <p class="sub">Your retriever's #1 result is often not the best answer - it is the best answer a single compressed vector could find. An embedding squeezes a whole passage into one point, and that compression loses detail. Reranking fixes it with a two-stage move: a fast retriever casts a wide net, then a slower, sharper model rescores just those candidates so the truly best chunk rises to the top. This session covers bi-encoders vs cross-encoders, the retrieve-wide-then-rerank-narrow funnel, MMR for trimming near-duplicates, and query expansion / HyDE for catching what the first pass missed. This is where Recall goes from useful to precise.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Concept-led session</span>
+      <span class="chip time">Session 6 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Recap</span>
+      <span class="a2" style="flex:4">3-22 · Two-stage rerank</span>
+      <span class="a3" style="flex:4">22-40 · MMR + HyDE</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why the top result is not always the best result</h2>
+    </div>
+    <p class="lede">By b5 Recall retrieves by meaning, filters by metadata, and fuses dense with sparse. But every one of those still ranks by comparing precomputed vectors, and a vector is a lossy summary. Two passages can look equally close to a query in embedding space when a careful reader would rank one far above the other. Reranking is that careful reader - a model that looks at the query and a candidate together and scores their real relevance. The catch is it is slow, so you only ever run it on a shortlist. That constraint shapes the whole design.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A clear model of bi-encoder vs cross-encoder scoring, the two-stage retrieve-wide-then-rerank-narrow funnel and why latency forces it, plus two recall-boosting tricks - MMR to kill near-duplicates and query expansion / HyDE to catch chunks the first pass missed.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: BI VS CROSS + TWO-STAGE ============ -->
+  <section class="section" id="twostage">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers bi-encoder vs cross-encoder + the two-stage funnel</span>
+      <h2>Bi-encoder vs cross-encoder, and the two-stage funnel <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">The retriever you have used all track is a <strong>bi-encoder</strong>: it encodes the query and each document <em>separately</em> into vectors, then compares them with cosine. That is why it is fast - document vectors are precomputed once and reused forever. A <strong>cross-encoder</strong> is different: it feeds the query and one document <em>together</em> through a single transformer and outputs a query-specific relevance score. Far more accurate, and far too slow to run over a whole corpus. So you stage them.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stage one uses a fast bi-encoder to retrieve about 150 candidates, stage two uses a slow cross-encoder to rescore them down to about 20">
+        <style>
+          .b6rBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b6rWide { fill: #8B5CF6; }
+          .b6rMid { fill: #6D28D9; }
+          .b6rNarrow { fill: #4C1D95; }
+          .b6rL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b6rW { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b6rS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b6rAx { stroke: #8B5CF6; stroke-width: 2.5; marker-end: url(#b6rAh); fill: none; }
+          .b6rN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b6rAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <rect class="b6rBox" x="20" y="140" width="120" height="50" rx="8"/>
+        <text class="b6rL" x="80" y="162" text-anchor="middle">query +</text>
+        <text class="b6rL" x="80" y="180" text-anchor="middle">whole corpus</text>
+        <line class="b6rAx" x1="144" y1="165" x2="200" y2="165"/>
+        <path class="b6rWide" d="M 210 90 L 400 120 L 400 210 L 210 240 Z"/>
+        <text class="b6rW" x="290" y="150" text-anchor="middle">stage 1</text>
+        <text class="b6rW" x="290" y="170" text-anchor="middle">bi-encoder</text>
+        <text class="b6rS" x="290" y="72" text-anchor="middle">fast · vector search &lt;100ms</text>
+        <text class="b6rS" x="290" y="262" text-anchor="middle">wide net: top ~150 candidates</text>
+        <line class="b6rAx" x1="404" y1="165" x2="450" y2="165"/>
+        <path class="b6rMid" d="M 460 125 L 590 140 L 590 190 L 460 205 Z"/>
+        <text class="b6rW" x="525" y="160" text-anchor="middle">stage 2</text>
+        <text class="b6rW" x="525" y="178" text-anchor="middle">cross-encoder</text>
+        <text class="b6rS" x="525" y="112" text-anchor="middle">slow · scores each query+doc pair</text>
+        <line class="b6rAx" x1="594" y1="165" x2="640" y2="165"/>
+        <rect class="b6rNarrow" x="650" y="140" width="120" height="50" rx="8"/>
+        <text class="b6rW" x="710" y="162" text-anchor="middle">top ~20</text>
+        <text class="b6rW" x="710" y="180" text-anchor="middle">reordered</text>
+        <text class="b6rS" x="710" y="212" text-anchor="middle">to the generator</text>
+        <rect x="20" y="300" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b6rN" x="44" y="312">Cheap where the corpus is huge, expensive only on the shortlist. That funnel is the whole trick.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - retrieve wide with a fast bi-encoder, rerank narrow with a slow cross-encoder</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Bi-encoder vs cross-encoder, side by side<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The difference is when the query and document meet:</p>
+        <ul>
+          <li><strong>Bi-encoder (your retriever).</strong> Query and document are encoded into vectors <em>independently</em>. Document vectors are computed once at index time, so a query is just "embed the query, cosine against the precomputed vectors". Fast and scalable - but the two texts never interact, so subtle relevance is lost.</li>
+          <li><strong>Cross-encoder (the reranker).</strong> The query and one document are concatenated and passed through the transformer <em>together</em>, so attention can compare them token by token. The output is a single relevance score for that exact pair. Much more accurate - but nothing is precomputable, so you must run a fresh forward pass for every candidate.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Why the bi-encoder loses precision</strong>
+          Encoding a passage into one vector compresses its full meaning into a fixed list of numbers - detail is thrown away, which costs you recall and precision at the margin. The cross-encoder never compresses; it reads the query and the passage in the same context. That is the entire quality gap, and the entire reason it is slow.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why you rerank the shortlist, not the corpus<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The whole two-stage design exists because of latency. A bi-encoder vector search over millions of chunks returns in well under 100ms because the heavy work happened at index time. A cross-encoder has no precomputed anything - it runs a full model pass per query+document pair.</p>
+        <ul>
+          <li><strong>The numbers force it.</strong> Reranking on the order of 40 million records with a cross-encoder on a V100 GPU would take more than 50 hours for a single query. You cannot rerank a corpus. You can rerank 150 candidates in a blink.</li>
+          <li><strong>So you funnel.</strong> Stage 1 (bi-encoder) casts a deliberately wide net - Anthropic's contextual-retrieval work retrieves the top ~150 chunks - precisely so the right answer is somewhere in the candidate set even if it is not #1. Stage 2 (cross-encoder) rescores those ~150 and keeps the top ~20 for the generator.</li>
+          <li><strong>Recall then precision.</strong> Stage 1 optimizes recall (get the right chunk into the net); stage 2 optimizes precision (put it at the top). Neither model could do both jobs affordably alone.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Wider net, then sharper sort.</strong> A team (anonymized) was retrieving k=5 straight from the bi-encoder and complained the right doc was "usually there but rarely first". Rather than tune the embedder, they retrieved 100 candidates and added a cross-encoder rerank down to 5. Same embeddings, same corpus - the correct chunk moved from a scattered rank into the top two on most queries. The fix was staging, not a better model.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Also: stuffing too many chunks hurts the LLM<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>There is a second reason reranking matters: you cannot just crank k up to be safe. Handing the generator 50 loosely relevant chunks does not raise accuracy - it lowers it. The model spreads attention across noise, is more likely to cite the wrong passage, and every extra chunk costs tokens and latency. Reranking lets you retrieve wide (high recall) yet feed the LLM a small, high-precision set - the best of both instead of a bad trade.</p>
+        <div class="callout tip">
+          <strong>The shape to remember</strong>
+          Retrieve wide so the answer is in the net; rerank narrow so the LLM sees only the best. High recall at stage 1, high precision at stage 2, a short final context for the generator. Reranking is what lets those goals coexist.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: MMR + QUERY EXPANSION / HYDE ============ -->
+  <section class="section" id="mmr-hyde">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers MMR diversity + query expansion / HyDE</span>
+      <h2>MMR diversity and query expansion / HyDE <span class="tag concept">7 min live</span></h2>
+    </div>
+    <p class="lede">Two more levers shape what reaches the generator. <strong>Query expansion / HyDE</strong> works at the input side: widen or rewrite the query so stage 1 retrieves chunks the raw question would have missed. <strong>MMR</strong> works at the output side: trim near-duplicate results so your final set is diverse rather than five phrasings of the same fact. One improves recall, the other improves the usefulness of the top-k.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Query expansion or HyDE broadens the query before a wide retrieve, then MMR trims near-duplicate results so the final set is diverse">
+        <style>
+          .b6qBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b6qExp { fill: #6D28D9; }
+          .b6qDup { fill: #C7C0DA; }
+          .b6qKeep { fill: #4C1D95; }
+          .b6qL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b6qW { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b6qS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b6qAx { stroke: #8B5CF6; stroke-width: 2.5; marker-end: url(#b6qAh); fill: none; }
+          .b6qN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b6qAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <rect class="b6qBox" x="20" y="130" width="110" height="46" rx="8"/>
+        <text class="b6qL" x="75" y="158" text-anchor="middle">raw query</text>
+        <line class="b6qAx" x1="134" y1="153" x2="180" y2="153"/>
+        <rect class="b6qExp" x="184" y="118" width="150" height="70" rx="8"/>
+        <text class="b6qW" x="259" y="146" text-anchor="middle">expand / HyDE</text>
+        <text class="b6qS" x="259" y="167" text-anchor="middle" fill="#F5F3FF">+ related terms,</text>
+        <text class="b6qS" x="259" y="182" text-anchor="middle" fill="#F5F3FF">a hypothetical answer</text>
+        <line class="b6qAx" x1="338" y1="153" x2="384" y2="153"/>
+        <text class="b6qS" x="470" y="96" text-anchor="middle">wide retrieve (candidates)</text>
+        <rect class="b6qKeep" x="388" y="106" width="170" height="22" rx="4"/><text class="b6qW" x="396" y="122">refund window · 5-7 days</text>
+        <rect class="b6qDup" x="388" y="132" width="170" height="22" rx="4"/><text class="b6qS" x="396" y="148">refunds take 5-7 days</text>
+        <rect class="b6qDup" x="388" y="158" width="170" height="22" rx="4"/><text class="b6qS" x="396" y="174">how long refunds take</text>
+        <rect class="b6qKeep" x="388" y="184" width="170" height="22" rx="4"/><text class="b6qW" x="396" y="200">return must be unused</text>
+        <line class="b6qAx" x1="562" y1="153" x2="608" y2="153"/>
+        <rect class="b6qBox" x="612" y="118" width="120" height="70" rx="8"/>
+        <text class="b6qL" x="672" y="146" text-anchor="middle">MMR</text>
+        <text class="b6qS" x="672" y="167" text-anchor="middle">drop near-</text>
+        <text class="b6qS" x="672" y="182" text-anchor="middle">duplicates</text>
+        <line class="b6qAx" x1="736" y1="153" x2="782" y2="153"/>
+        <text class="b6qL" x="828" y="149" text-anchor="middle">diverse</text>
+        <text class="b6qL" x="828" y="166" text-anchor="middle">top-k</text>
+        <rect x="20" y="292" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b6qN" x="44" y="304">Expand to find more; MMR to keep the final few varied instead of five ways of saying one thing.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - expand the query going in, trim duplicates with MMR coming out</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Query expansion and HyDE<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A short or oddly worded query retrieves poorly - the b1 lesson that vague queries are where retrieval is weakest. Query expansion fixes it before retrieval runs, and the DeepLearning.AI Chroma course teaches two flavours:</p>
+        <ul>
+          <li><strong>Expansion with related terms.</strong> Use an LLM to add synonyms and related phrasing to the query, so the embedding lands nearer more of the relevant chunks. "refund?" becomes "refund, return policy, money back, days to process" - a richer vector, a wider net.</li>
+          <li><strong>HyDE (hypothetical document embeddings).</strong> Ask an LLM to <em>write a plausible answer</em> to the question, then embed that hypothetical answer instead of (or alongside) the question. Answers look like documents, so an answer-shaped vector matches real answer passages better than a question-shaped one. It directly attacks the b1 problem that questions rarely share words with their answers.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The cost of expansion</strong>
+          Both tricks add an LLM call before retrieval, so they add latency and can drift off-topic if the hypothetical answer hallucinates. Use them where recall is the bottleneck - short queries, sparse corpora - not everywhere by default. Measure hit rate (b4) with and without.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>MMR: maximal marginal relevance<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A wide retrieve often returns near-duplicates: three chunks that all state the same fact in slightly different words. Feeding all three to the generator wastes context on redundancy and can crowd out a different, also-relevant chunk. <strong>MMR (maximal marginal relevance)</strong> picks results that are relevant to the query <em>and</em> different from what it has already picked - each new chunk must earn its slot by adding something new.</p>
+        <ul>
+          <li><strong>What it does.</strong> Instead of taking the top-k by pure similarity, MMR balances relevance to the query against dissimilarity to the already-selected results, trimming redundant near-duplicates.</li>
+          <li><strong>When to reach for it.</strong> Broad questions ("summarize what went wrong across incidents") where you want coverage of distinct points, not the single best point repeated. Most frameworks expose it as a search type - LangChain has a <code>search_type="mmr"</code> retriever option.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>★ See it: top-k now, imagine the rerank<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This is the bi-encoder stage over <strong>Corpus B</strong> - the raw, un-reranked top-k you have used since b4. Run a broad query and read the list as a candidate set, not a final answer: is the truly most relevant incident at #1, or merely in the net? Are there near-duplicates a cross-encoder would reorder and MMR would thin?</p>
+        <div class="ragbox" data-corpus="B" data-k="5" data-meta="date,severity" data-caption="Retrieve a wide top-5, then imagine a cross-encoder rescoring these candidates and MMR trimming duplicates"></div>
+        <div class="callout tip">
+          <strong>Honesty note - what this playground really does</strong>
+          This is only stage 1: a <em>simplified</em> lexical bi-encoder (term frequency + synonyms, offline) ranking by cosine, exactly as in earlier sessions. There is no real cross-encoder here - reranking, MMR, and HyDE are concepts to picture over this candidate set, not code the playground runs. The cosine ranking you see is the real stage-1 mechanic; the stage-2 sharpening is what you would add in production.
+        </div>
+        <p>Pick a query where #1 looks arguable, then describe in one line how a cross-encoder reading each query+incident pair together would likely reorder it, and which near-duplicate MMR would drop.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG / EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · take it further</span>
+      <h2>Reorder a result set on paper <span class="tag demo">★ 10 min · the Corpus B playground</span></h2>
+    </div>
+    <p class="lede">You do not need a cross-encoder loaded to reason like one. Use the Corpus B playground above and practise the two-stage instinct by hand.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Find a near-duplicate pair.</strong> Run a broad query (e.g. "payment problems") at k=5 and look for two results that say almost the same thing - two payment-outage incidents, say. Note their ranks.</p></div>
+      <div class="step"><p><strong>Rerank on paper.</strong> Reading each query+incident pair carefully (as a cross-encoder would), decide which of the two is genuinely more relevant to the exact question, and write the order you would put the top-5 in. Note where it differs from the cosine order.</p></div>
+      <div class="step"><p><strong>Apply MMR.</strong> From your reranked list, drop the near-duplicate that adds the least new information and pull up the next distinct incident. That is MMR by hand - relevance plus diversity.</p></div>
+      <div class="step"><p><strong>Expand the query.</strong> Take a short query that retrieved poorly and rewrite it with related terms, or sketch a one-sentence hypothetical answer (HyDE). Say which chunks that richer query would now reach that the terse one missed.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b6</strong>
+      Recall is now precise: it retrieves a wide candidate set, understands how a cross-encoder rerank would reorder it, trims near-duplicates with MMR, and can widen thin queries with expansion or HyDE. The right chunk not only makes the net - it lands at the top. In b7 we stop trusting Recall blindly: we make it ground every claim in its retrieved chunks, cite sources, and refuse when the best chunk simply is not good enough.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b7 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Add a cross-encoder rerank to your b4 retriever: retrieve the top ~50 with the bi-encoder, rescore with a <code>sentence-transformers</code> cross-encoder (or a hosted reranker), keep the top 5. Compare hit rate before and after.</li>
+      <li>Switch your LangChain retriever to <code>search_type="mmr"</code> on a broad query and confirm the returned chunks are more varied than pure similarity gave you.</li>
+      <li>Implement a simple query expansion: ask an LLM to rewrite a terse query with related terms, retrieve with both, and note which chunks the expanded query reached that the original missed.</li>
+      <li>Read: the Pinecone reranking guide, and the DeepLearning.AI "Advanced Retrieval for AI with Chroma" lessons on query expansion and cross-encoder reranking.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from official docs and a vendor course. This page covers ~80% of their working content on reranking and query-side recall tricks - the model-training internals and hosted-reranker billing stay with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Pinecone · Rerankers / two-stage retrieval</span><span class="note">Part 1 · bi-encoder vs cross-encoder · retrieve wide then rerank narrow · latency budget</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">DeepLearning.AI · Advanced Retrieval for AI with Chroma</span><span class="note">Part 2 · query expansion · HyDE (hypothetical answer) · cross-encoder rerank</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Anthropic · Contextual Retrieval (reranking funnel)</span><span class="note">Part 1 · top ~150 candidates → rerank → keep top ~20</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · How does a cross-encoder differ from a bi-encoder?</p>
+      <button class="qopt" type="button">A · It encodes the query and each document into separate vectors and compares them with cosine</button>
+      <button class="qopt" type="button">B · It feeds the query and a document together through one transformer for a query-specific score - accurate but slow</button>
+      <button class="qopt" type="button">C · It only works on keyword (sparse) search, never on embeddings</button>
+      <p class="qwhy">A bi-encoder encodes query and doc separately (fast, precomputable). A cross-encoder reads the pair together for an accurate, query-specific score - too slow to run over a whole corpus.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · Why do you rerank only a candidate set (e.g. ~150) rather than the whole corpus?</p>
+      <button class="qopt" type="button">A · A cross-encoder runs a fresh model pass per query+doc pair, so scoring a full corpus would take hours; the bi-encoder cheaply narrows to a shortlist first</button>
+      <button class="qopt" type="button">B · Vector databases physically cannot store more than 150 vectors</button>
+      <button class="qopt" type="button">C · Reranking makes results worse, so you limit the damage</button>
+      <p class="qwhy">Cross-encoders have nothing precomputed - reranking ~40M records on a V100 would take 50+ hours. Retrieve wide fast, then rerank the shortlist.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">3 · What problem does MMR (maximal marginal relevance) address?</p>
+      <button class="qopt" type="button">A · Queries that share no words with their answers</button>
+      <button class="qopt" type="button">B · Metadata filters that are too strict</button>
+      <button class="qopt" type="button">C · Near-duplicate results - it balances relevance against diversity so the top-k is not five phrasings of one fact</button>
+      <p class="qwhy">MMR trims redundant near-duplicates by favouring results that are both relevant to the query and different from those already selected.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 6 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Bi-encoder</b><span>Encodes query + doc separately; cosine over precomputed vectors. Fast, your retriever.</span></div>
+      <div class="cheat-item"><b>Cross-encoder</b><span>Feeds query+doc together through one transformer. Accurate, query-specific, slow.</span></div>
+      <div class="cheat-item"><b>Two-stage funnel</b><span>Retrieve wide (fast bi-encoder) → rerank narrow (slow cross-encoder). ~150 → ~20.</span></div>
+      <div class="cheat-item"><b>Why staged</b><span>Cross-encoder on a full corpus = 50+ hrs. Only rerank the candidate set.</span></div>
+      <div class="cheat-item"><b>Recall then precision</b><span>Stage 1 gets the answer in the net; stage 2 puts it at the top.</span></div>
+      <div class="cheat-item"><b>Too many chunks hurt</b><span>Stuffing k high adds noise + tokens; the LLM cites the wrong passage.</span></div>
+      <div class="cheat-item"><b>Query expansion / HyDE</b><span>Add related terms, or embed an LLM-written hypothetical answer, to widen retrieval.</span></div>
+      <div class="cheat-item"><b>MMR</b><span>Maximal marginal relevance - trims near-duplicates; relevance + diversity.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 6 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b5-metadata-hybrid.html">← Prev: Metadata + hybrid retrieval</a> &nbsp;·&nbsp; <a href="b7-grounding-citations.html">Next: Grounding + citations →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

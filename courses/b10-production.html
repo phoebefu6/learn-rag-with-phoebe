@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 10 · Production RAG - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 10 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 10 of 10</div>
+    <h1>Production RAG: <span class="accent">keeping Recall alive - and the handoff</span></h1>
+    <p class="sub">This is the last session. Recall works, it is cited, and it is scored - but a demo that works on your laptop is not a system that survives contact with real users and changing documents. Production RAG is about the parts nobody demos: re-indexing when documents change, caching so you do not re-embed the same text forever, a latency budget you can defend, monitoring that catches quality drift, and a cost ceiling. We close by drawing Recall's full pipeline as one diagram, checking it off for graduation, and pointing at the natural next step - orchestrating retrieval as a tool inside an agent with LangChain.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Builder track · advanced</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Final session</span>
+      <span class="chip time">Session 10 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-24 · Keeping it alive</span>
+      <span class="a3" style="flex:4">24-42 · Graduation + handoff</span>
+      <span class="a4" style="flex:1">42-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The gap between "it works" and "it keeps working"</h2>
+    </div>
+    <p class="lede">Everything so far assumed a fixed pile of documents and one query at a time. Production breaks both assumptions. Documents change daily, so your index goes stale. Thousands of queries arrive, so cost and latency stop being free. And no one is watching the demo anymore, so quality drifts unnoticed. <strong>Production RAG is the discipline of keeping a retrieval system fresh, fast, cheap, and honest while it runs unattended.</strong> None of it is glamorous. All of it is why some RAG systems last years and others die in a month.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Recall graduates</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A production readiness checklist for Recall - a freshness plan, a defended latency budget, a monitoring plan, and a cost cap - plus the full-pipeline picture and a clear next step: orchestrating Recall inside an agent with LangChain.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: KEEPING A RAG SYSTEM ALIVE ============ -->
+  <section class="section" id="alive">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers freshness, caching, latency, monitoring, cost</span>
+      <h2>Keeping a RAG system alive <span class="tag concept">11 min live</span></h2>
+    </div>
+    <p class="lede">Four forces act on a live RAG system: documents drift (freshness), the same work repeats (caching), users wait (latency), and quality slips silently (monitoring) - all under a cost ceiling. Here is the production loop and where the milliseconds and dollars go.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Top: a production loop where documents change, then only changed chunks are re-embedded and re-indexed, then the system serves queries, looping back. Middle: a latency budget bar split into embed query, retrieve, rerank, and generate, with generate the largest. Bottom: a cost meter.">
+        <style>
+          .b10pNode { fill: #F5F3FF; stroke: #6D28D9; stroke-width: 2; }
+          .b10pNodeD { fill: #4C1D95; }
+          .b10pT { font: 700 12.5px Inter, sans-serif; fill: #211B33; }
+          .b10pTw { font: 700 12.5px Inter, sans-serif; fill: #FFFFFF; }
+          .b10pArr { stroke: #8B5CF6; stroke-width: 2.5; fill: none; marker-end: url(#b10pAh); }
+          .b10pLbl { font: 700 11px Inter, sans-serif; fill: #6E6685; }
+          .b10pBarT { font: 700 11px Inter, sans-serif; fill: #FFFFFF; }
+          .b10pSeg { font: 800 13px Inter, sans-serif; fill: #4C1D95; }
+          .b10pN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b10pAh" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <!-- production loop -->
+        <text class="b10pSeg" x="50" y="30">The production loop</text>
+        <rect class="b10pNode" x="50" y="44" width="180" height="52" rx="8"/>
+        <text class="b10pT" x="140" y="66" text-anchor="middle">documents change</text>
+        <text class="b10pLbl" x="140" y="84" text-anchor="middle">added / edited / removed</text>
+        <path class="b10pArr" d="M 234 70 L 296 70"/>
+        <rect class="b10pNodeD" x="300" y="44" width="200" height="52" rx="8"/>
+        <text class="b10pTw" x="400" y="66" text-anchor="middle">re-embed CHANGED chunks</text>
+        <text class="b10pTw" x="400" y="84" text-anchor="middle" style="font-weight:600;fill:#A78BFA">+ re-index</text>
+        <path class="b10pArr" d="M 504 70 L 566 70"/>
+        <rect class="b10pNode" x="570" y="44" width="180" height="52" rx="8"/>
+        <text class="b10pT" x="660" y="74" text-anchor="middle">serve queries</text>
+        <!-- loop back arrow -->
+        <path class="b10pArr" d="M 660 100 L 660 122 L 140 122 L 140 100"/>
+        <text class="b10pLbl" x="400" y="138" text-anchor="middle">only re-embed what changed - re-embedding everything is the rookie cost sink</text>
+        <!-- latency budget -->
+        <text class="b10pSeg" x="50" y="182">Latency budget · where the query-time ms go</text>
+        <rect x="50" y="196" width="110" height="40" fill="#A78BFA"/>
+        <text class="b10pBarT" x="105" y="221" text-anchor="middle">embed q</text>
+        <rect x="160" y="196" width="180" height="40" fill="#8B5CF6"/>
+        <text class="b10pBarT" x="250" y="221" text-anchor="middle">vector search &lt;100ms</text>
+        <rect x="340" y="196" width="130" height="40" fill="#6D28D9"/>
+        <text class="b10pBarT" x="405" y="221" text-anchor="middle">rerank (opt)</text>
+        <rect x="470" y="196" width="360" height="40" fill="#4C1D95"/>
+        <text class="b10pBarT" x="650" y="221" text-anchor="middle">LLM generation - usually the largest</text>
+        <text class="b10pLbl" x="50" y="256">retrieval is cheap; the model is where the wait lives - budget accordingly</text>
+        <!-- cost meter -->
+        <text class="b10pSeg" x="50" y="298">Cost meter</text>
+        <rect x="50" y="312" width="780" height="26" rx="13" fill="#F5F3FF" stroke="#C7C0DA" stroke-width="1.5"/>
+        <rect x="50" y="312" width="470" height="26" rx="13" fill="#6D28D9"/>
+        <text class="b10pBarT" x="70" y="330">embeddings + LLM tokens</text>
+        <text class="b10pLbl" x="540" y="330">↑ cache to keep this bar from creeping</text>
+        <rect x="50" y="404" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b10pN" x="74" y="416">Fresh, fast, cheap, watched - a live RAG system is these four forces held in balance.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the production loop, the latency budget, and the cost meter</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Freshness: re-index without re-doing everything<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Your documents will change - new pages, edits, deletions. The naive move is to re-embed the entire corpus on a schedule, which is slow and expensive. The production move is to <strong>re-embed only the chunks that changed and re-index those</strong>, leaving the rest untouched.</p>
+        <ul>
+          <li><strong>Track what changed.</strong> Hash each chunk (or watch source timestamps). If the hash is unchanged, skip it - its vector is still valid.</li>
+          <li><strong>Re-embed the delta, re-index it.</strong> Only new and edited chunks hit the embedding model; deleted ones are removed from the index.</li>
+          <li><strong>Cadence is a design decision, not a fixed number.</strong> There is no authoritative "re-index every N hours". A legal knowledge base that changes quarterly and a news feed that changes hourly need different cadences. Pick yours from how fast your documents actually move and how stale an answer you can tolerate.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Freshness is a product decision</strong>
+          Do not let "how often do we re-index" be an infra afterthought. It is a promise to your users about how current Recall's answers are. Write it down as a target ("answers reflect changes within 1 hour") and let that drive the cadence, not the other way around.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Caching: stop paying for the same work twice<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Embedding is deterministic: the same text always produces the same vector. So embedding a document you have already embedded is pure waste. Two caches pay off:</p>
+        <ul>
+          <li><strong>Cache document embeddings.</strong> Compute each chunk's vector once and store it. This is really what your vector store <em>is</em> - the point is to never re-embed unchanged chunks (ties straight back to freshness).</li>
+          <li><strong>Optionally cache frequent answers.</strong> If the same popular question arrives constantly, cache its final answer (with a sensible expiry) and skip retrieval and generation entirely. Watch staleness - a cached answer over changed docs is a subtle bug.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Prompt caching for the RAG prompt itself.</strong> Anthropic's contextual retrieval technique contextualizes every chunk once at index time - and keeps that one-time cost low (roughly $1.02 per million document tokens) precisely by using prompt caching. The same idea helps at query time: if a large, stable block of context or instructions repeats across requests, prompt caching means you are not re-paying to process it every call.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Latency budget: know where the time goes<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>A user-facing RAG query has a time budget, and you should be able to name where every millisecond goes. Roughly, in order:</p>
+        <ul>
+          <li><strong>Embed the query.</strong> One short embedding call. Small.</li>
+          <li><strong>Vector search.</strong> A good ANN index returns in well under 100ms even over millions of vectors. Cheap.</li>
+          <li><strong>Rerank (optional).</strong> The cross-encoder or rerank API you added in b5 costs real time but sharply improves precision - a deliberate trade.</li>
+          <li><strong>LLM generation.</strong> Almost always the largest slice, and it grows with output length. This is where you spend your latency budget, so it is where optimization (streaming, smaller models, shorter answers) pays back most.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Budget backwards from the user</strong>
+          Start with "answers must feel instant, say under 2 seconds to first token", then allocate: retrieval gets a small fixed slice, and the rest belongs to the model. If you are over budget, the lever is almost always generation - not the retriever.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Monitoring: catch drift before users do<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>In the demo you watched every answer. In production nobody does - so you instrument instead. Log the signals that tell you Recall's quality is slipping:</p>
+        <ul>
+          <li><strong>Retrieval quality signals.</strong> Log top scores, whether the top-k cleared your b7 refusal threshold, and periodically run the b9 eval on a sample of real traffic.</li>
+          <li><strong>Refusals.</strong> Track how often Recall says "I don't know". A sudden spike means retrieval broke (or docs went stale); a drop to zero can mean the refusal guard stopped working and hallucinations are leaking through.</li>
+          <li><strong>Latency and cost per query.</strong> Watch the budget and the meter over time - both creep quietly.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: GRADUATION + HANDOFF ============ -->
+  <section class="section" id="graduation">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers Recall's full pipeline + the next course</span>
+      <h2>The graduation, and the handoff to LangChain <span class="tag concept">10 min live</span></h2>
+    </div>
+    <p class="lede">Ten sessions ago Recall was an idea. Here is everything you built, in one picture - split into what happens once at index time and what happens on every query - and where it goes next.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Recall's full pipeline. Index-time row: ingest, chunk, embed, store. Query-time row: retrieve, rerank, augment, generate, cite, evaluate. An arrow points to the next step: orchestrate this inside an agent with LangChain.">
+        <style>
+          .b10gIdx { fill: #8B5CF6; }
+          .b10gQry { fill: #4C1D95; }
+          .b10gT { font: 700 11.5px Inter, sans-serif; fill: #FFFFFF; }
+          .b10gRow { font: 800 12.5px Inter, sans-serif; fill: #6D28D9; }
+          .b10gArr { stroke: #C7C0DA; stroke-width: 2; fill: none; marker-end: url(#b10gAh); }
+          .b10gNext { fill: #F5F3FF; stroke: #C6961A; stroke-width: 2.5; }
+          .b10gNextT { font: 800 13px Inter, sans-serif; fill: #3A2A00; }
+          .b10gN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b10gAh" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#C7C0DA"/></marker>
+        </defs>
+        <!-- index time row -->
+        <text class="b10gRow" x="50" y="46">INDEX TIME · once per document change</text>
+        <rect class="b10gIdx" x="50" y="58" width="150" height="44" rx="7"/>
+        <text class="b10gT" x="125" y="85" text-anchor="middle">ingest</text>
+        <path class="b10gArr" d="M 202 80 L 226 80"/>
+        <rect class="b10gIdx" x="228" y="58" width="150" height="44" rx="7"/>
+        <text class="b10gT" x="303" y="85" text-anchor="middle">chunk</text>
+        <path class="b10gArr" d="M 380 80 L 404 80"/>
+        <rect class="b10gIdx" x="406" y="58" width="150" height="44" rx="7"/>
+        <text class="b10gT" x="481" y="85" text-anchor="middle">embed</text>
+        <path class="b10gArr" d="M 558 80 L 582 80"/>
+        <rect class="b10gIdx" x="584" y="58" width="150" height="44" rx="7"/>
+        <text class="b10gT" x="659" y="85" text-anchor="middle">store (vector index)</text>
+        <!-- query time row -->
+        <text class="b10gRow" x="50" y="150">QUERY TIME · every user question</text>
+        <rect class="b10gQry" x="50" y="162" width="130" height="44" rx="7"/>
+        <text class="b10gT" x="115" y="189" text-anchor="middle">retrieve</text>
+        <path class="b10gArr" d="M 182 184 L 202 184"/>
+        <rect class="b10gQry" x="204" y="162" width="130" height="44" rx="7"/>
+        <text class="b10gT" x="269" y="189" text-anchor="middle">rerank</text>
+        <path class="b10gArr" d="M 336 184 L 356 184"/>
+        <rect class="b10gQry" x="358" y="162" width="130" height="44" rx="7"/>
+        <text class="b10gT" x="423" y="189" text-anchor="middle">augment</text>
+        <path class="b10gArr" d="M 490 184 L 510 184"/>
+        <rect class="b10gQry" x="512" y="162" width="130" height="44" rx="7"/>
+        <text class="b10gT" x="577" y="189" text-anchor="middle">generate</text>
+        <path class="b10gArr" d="M 644 184 L 664 184"/>
+        <rect class="b10gQry" x="666" y="162" width="80" height="44" rx="7"/>
+        <text class="b10gT" x="706" y="189" text-anchor="middle">cite</text>
+        <path class="b10gArr" d="M 748 184 L 768 184"/>
+        <rect class="b10gQry" x="770" y="162" width="90" height="44" rx="7"/>
+        <text class="b10gT" x="815" y="189" text-anchor="middle">evaluate</text>
+        <!-- next arrow -->
+        <path class="b10gArr" d="M 440 214 L 440 250" style="stroke:#C6961A;marker-end:url(#b10gAhg)"/>
+        <defs>
+          <marker id="b10gAhg" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#C6961A"/></marker>
+        </defs>
+        <rect class="b10gNext" x="180" y="256" width="520" height="52" rx="9"/>
+        <text class="b10gNextT" x="440" y="279" text-anchor="middle">NEXT: orchestrate this inside an agent</text>
+        <text class="b10gNextT" x="440" y="298" text-anchor="middle" style="fill:#6D28D9">the model decides when to retrieve → LangChain / LangGraph</text>
+        <rect x="50" y="352" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b10gN" x="74" y="364">This is Recall, whole. Index time builds the memory; query time uses it. You built all of it.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - Recall's full pipeline, index-time and query-time, and the road to agents</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The 2026 frontier: contextual and agentic RAG<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>RAG did not stop moving. Two directions are where the field is heading, and both build directly on what you now understand:</p>
+        <ul>
+          <li><strong>Contextual retrieval.</strong> Anthropic's technique prepends a short, chunk-specific context blurb to each chunk before embedding, so an isolated chunk carries the meaning of its whole document. It measurably cuts failed retrievals, and prompt caching keeps the one-time cost low.</li>
+          <li><strong>Agentic RAG.</strong> Instead of always retrieving, the model <em>decides</em> when to call a retrieve tool - and can retrieve multiple times, refine its query, or combine sources - as steps in a reasoning loop. Retrieval becomes one tool an agent chooses to use, not a fixed first step.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Prompt caching for RAG cost</strong>
+          As systems get more agentic and prompts get longer (instructions, tools, stable context), Anthropic's prompt caching becomes a core cost lever - repeated context is processed once and reused across calls rather than re-billed every request. Keep it in mind as Recall grows.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Recall's graduation checklist<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Recall is production-shaped when it can answer yes to all of these. This is your handoff document - the difference between a demo and a system.</p>
+        <ul>
+          <li><strong>Freshness plan.</strong> Only changed chunks are re-embedded and re-indexed, on a cadence tied to how fast your docs actually change.</li>
+          <li><strong>Caching.</strong> Document embeddings computed once; frequent answers cached with expiry; prompt caching for stable repeated context.</li>
+          <li><strong>Latency budget.</strong> A named target with time allocated across embed, search, rerank, generate - and generation is the slice you optimize.</li>
+          <li><strong>Monitoring.</strong> Retrieval scores, refusal rate, latency, and cost logged; a sample of real traffic run through the b9 eval.</li>
+          <li><strong>Cost cap.</strong> A ceiling per month, with alerts, so nothing runs away silently.</li>
+          <li><strong>Eval gate.</strong> No change ships unless the b9 scorecard holds or improves.</li>
+        </ul>
+        <div class="callout win">
+          <strong>You built a real RAG system, from scratch</strong>
+          From "an embedding is meaning as numbers" in b1 to a monitored, evaluated, production-shaped assistant here in b10 - you understand every stage, why it exists, and how to measure it. That is rarer than it should be. Thank you for building Recall with me across all ten sessions. Now go make it do something that matters.
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · graduate Recall</span>
+      <h2>Write Recall's production readiness checklist <span class="tag demo">★ 12 min</span></h2>
+    </div>
+    <p class="lede">Your final build-along is a document, not code - and it is the most valuable thing you will write in this track. Turn the graduation checklist into a concrete, filled-in plan for Recall, with real numbers you would actually defend.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Freshness plan.</strong> How do your documents change, how fast, and what re-index cadence follows? State the staleness promise ("answers reflect changes within X").</p></div>
+      <div class="step"><p><strong>Latency budget.</strong> Write your target (e.g. under 2s to first token) and allocate ms across embed / search / rerank / generate. Name the slice you would cut first if over budget.</p></div>
+      <div class="step"><p><strong>Monitoring plan.</strong> List the exact signals you will log - top retrieval scores, refusal rate, latency, cost per query - and what threshold triggers an alert.</p></div>
+      <div class="step"><p><strong>Cost cap + eval gate.</strong> Set a monthly ceiling and the rule that no change ships unless the b9 scorecard holds. Now Recall has a constitution, not just code.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall graduates</strong>
+      Recall is fresh, fast, cheap, watched, and scored - a production-shaped RAG system you understand end to end. There is nothing left to add to the pipeline itself. The next move is to give Recall agency: let a model decide <em>when</em> to retrieve, chain steps, and use retrieval as one tool among many. That is orchestration - and it is a whole course of its own.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>After the track <span class="tag exercise">◐ light · your choice</span></h2>
+    </div>
+    <ul>
+      <li>Ship Recall somewhere real, even small - your own notes, a team wiki, a docs site. A RAG system you actually use teaches more in a week than any exercise.</li>
+      <li>Try contextual retrieval on one corpus: prepend a chunk-specific context blurb before embedding and re-run your b9 eval. Watch context recall move.</li>
+      <li>Sketch what Recall would look like as an agent tool - when should the model retrieve, when should it answer directly, when should it retrieve twice? That question is the doorway to the next course.</li>
+      <li>Then start <a href="https://phoebefu6.github.io/learn-langchain-with-phoebe/">learn-langchain-with-phoebe</a> and wire Recall's retriever into an agent. This is where it gets fun.</li>
+    </ul>
+    <p class="lede" style="margin-top:18px">That is the whole track. You started not knowing what an embedding was, and you finish with a production-shaped, evaluated retrieval assistant you built yourself. Be proud of that - and keep building. See you in LangChain. - Phoebe</p>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from Anthropic's production RAG writing plus Pinecone and LlamaIndex operational guidance. This page covers the working ideas; hosted-infra specifics stay with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Contextual Retrieval + prompt caching</span><span class="note">Part 1-2 · one-time contextualization (~$1.02/M doc tokens via prompt caching) · prompt caching as a cost lever · the 2026 frontier</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Pinecone · rerankers &amp; latency</span><span class="note">Part 1 · vector search under 100ms · rerank as a latency/precision trade-off</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">LlamaIndex · storing &amp; freshness</span><span class="note">Part 1 · persist/re-index changed chunks · note: no single authoritative re-index cadence - it is a design decision</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · Your knowledge base updates daily. What is the production-right way to keep the index fresh?</p>
+      <button class="qopt" type="button">A · Re-embed the entire corpus every night on a cron job</button>
+      <button class="qopt" type="button">B · Re-embed only the chunks that changed and re-index those</button>
+      <button class="qopt" type="button">C · Switch to keyword search so no embeddings go stale</button>
+      <p class="qwhy">Embeddings are deterministic, so unchanged chunks keep valid vectors. Re-embed only the delta (new/edited chunks) and re-index them - re-embedding everything is the classic cost sink.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · In a typical query-time latency budget, which stage is usually the largest?</p>
+      <button class="qopt" type="button">A · Embedding the query</button>
+      <button class="qopt" type="button">B · Vector search over the index</button>
+      <button class="qopt" type="button">C · LLM generation of the answer</button>
+      <p class="qwhy">Vector search is well under 100ms and query embedding is tiny. Generation is almost always the largest slice and grows with output length - so it is where latency optimization pays off most.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · What best describes agentic RAG, the direction the field is heading?</p>
+      <button class="qopt" type="button">A · The model decides when (and how often) to call a retrieve tool, rather than always retrieving first</button>
+      <button class="qopt" type="button">B · Retrieval runs on a faster GPU</button>
+      <button class="qopt" type="button">C · The index is rebuilt after every single query</button>
+      <p class="qwhy">In agentic RAG retrieval becomes a tool the model chooses to use - it can retrieve zero, one, or several times and refine its query - orchestrated in a reasoning loop (the LangChain/LangGraph handoff).</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 10 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Freshness</b><span>Re-embed only CHANGED chunks and re-index them. Cadence is a design decision tied to how fast docs move.</span></div>
+      <div class="cheat-item"><b>Caching</b><span>Compute document embeddings once; cache frequent answers with expiry; prompt-cache stable repeated context.</span></div>
+      <div class="cheat-item"><b>Latency budget</b><span>embed q + vector search (&lt;100ms) + rerank (opt) + generation. Generation is usually the largest.</span></div>
+      <div class="cheat-item"><b>Monitoring</b><span>Log retrieval scores, refusal rate, latency, cost. Run b9 eval on sampled real traffic.</span></div>
+      <div class="cheat-item"><b>Cost + eval gate</b><span>Set a monthly cap with alerts. No change ships unless the b9 scorecard holds or improves.</span></div>
+      <div class="cheat-item"><b>Prompt caching</b><span>Contextual retrieval's one-time cost (~$1.02/M doc tokens) rides on prompt caching. A core cost lever.</span></div>
+      <div class="cheat-item"><b>2026 frontier</b><span>Contextual retrieval (per-chunk context blurb) + agentic RAG (model decides when to retrieve).</span></div>
+      <div class="cheat-item"><b>The handoff</b><span>Next: orchestrate retrieval as a tool inside an agent - LangChain / LangGraph. Recall graduates.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 10 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b9-evaluation.html">← Prev: RAG evaluation</a> &nbsp;·&nbsp; <a href="../index.html">← All sessions</a> &nbsp;·&nbsp; <a href="https://phoebefu6.github.io/learn-langchain-with-phoebe/">Next: orchestrate Recall in an agent → learn-langchain-with-phoebe</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

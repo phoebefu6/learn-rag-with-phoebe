@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 5 · Risk &amp; governance - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Leader session 5 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Leader track · Session 5 of 6</div>
+    <h1>Risk and governance <span class="accent">for a system that reads your documents</span></h1>
+    <p class="sub">RAG is powerful precisely because it reaches into your real documents - and that reach is exactly where the risk lives. A system that can retrieve any passage can retrieve the wrong passage, to the wrong person, from an outdated file, and answer with total confidence. This session gives you the governance stack: the five risks unique to retrieval, and the small set of controls - refusal, citations, access filtering, audit logs - you can insist on to keep a RAG system honest. No code, just the checklist a leader owns.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Deciding</span>
+      <span class="chip audience">Leaders: C-level · managers · curious minds</span>
+      <span class="chip audience">No code, ever</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Concepts</span>
+      <span class="a3" style="flex:4">20-40 · Exercises</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The risks that come with reaching into your data</h2>
+    </div>
+    <p class="lede">A plain chatbot can only embarrass you. A RAG system can leak a document, quote a policy that was rescinded last quarter, or answer a question it should have declined - because it is wired directly into your knowledge base. That is not a reason to avoid RAG; it is a reason to govern it. The good news for leaders: the controls are surprisingly concrete and mostly non-technical to <em>demand</em>, even if they are technical to build. You can insist the system cites its sources, refuses when it should, and only retrieves what the person asking is allowed to see. This session turns those instincts into a checklist.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Try it now prompt</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The five risks that are unique to retrieval (and are not on a normal AI risk register), the four controls you can insist on - refusal, citations, access filtering, audit logs - a RAG risk register you can fill in for your own system, and a refusal policy that decides when your assistant should say "I don't know".
+    </div>
+  </section>
+
+  <!-- ============ PART 1: FIVE RISKS ============ -->
+  <section class="section" id="five-risks">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers what retrieval adds to your risk register</span>
+      <h2>The five risks unique to retrieval <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">These five are not the usual "AI might be biased" concerns. They exist <em>because</em> the system retrieves from your real documents. Every one of them has bitten a real team, and every one has a named control in Part 2.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A risk board of five retrieval risks: PII landing in embeddings, access control leaks, staleness from outdated documents, vendor lock-in from model-specific embeddings, and confident hallucination when context is thin">
+        <style>
+          .a5rT { font: 700 15px Inter, sans-serif; fill: #FFFFFF; }
+          .a5rW { font: 400 12px Inter, sans-serif; fill: #EDE9FB; }
+          .a5rH { font: 700 15px Inter, sans-serif; fill: #211B33; }
+          .a5rS { font: 400 12px Inter, sans-serif; fill: #4A4360; }
+          .a5rNum { font: 800 22px Inter, sans-serif; fill: #A78BFA; }
+          .a5rNi { font: 800 22px Inter, sans-serif; fill: #8B5CF6; }
+          .a5rN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <rect x="30" y="24" width="260" height="120" rx="14" fill="#4C1D95"/>
+        <text class="a5rNum" x="50" y="56">1</text>
+        <text class="a5rT" x="86" y="52">PII in embeddings</text>
+        <text class="a5rW" x="50" y="88">Sensitive data gets copied</text>
+        <text class="a5rW" x="50" y="106">into the search index and</text>
+        <text class="a5rW" x="50" y="124">is hard to fully remove.</text>
+        <rect x="310" y="24" width="260" height="120" rx="14" fill="#6D28D9"/>
+        <text class="a5rNum" x="330" y="56">2</text>
+        <text class="a5rT" x="366" y="52">Access leaks</text>
+        <text class="a5rW" x="330" y="88">Retrieval can surface a doc</text>
+        <text class="a5rW" x="330" y="106">the person asking was</text>
+        <text class="a5rW" x="330" y="124">never allowed to see.</text>
+        <rect x="590" y="24" width="260" height="120" rx="14" fill="#8B5CF6"/>
+        <text class="a5rNi" x="610" y="56">3</text>
+        <text class="a5rT" x="646" y="52">Staleness</text>
+        <text class="a5rW" x="610" y="88">Answers drawn from an</text>
+        <text class="a5rW" x="610" y="106">outdated document nobody</text>
+        <text class="a5rW" x="610" y="124">remembered to refresh.</text>
+        <rect x="170" y="164" width="260" height="120" rx="14" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a5rNi" x="190" y="196">4</text>
+        <text class="a5rH" x="226" y="192">Vendor lock-in</text>
+        <text class="a5rS" x="190" y="228">Embeddings are model-</text>
+        <text class="a5rS" x="190" y="246">specific; switching means</text>
+        <text class="a5rS" x="190" y="264">re-embedding everything.</text>
+        <rect x="450" y="164" width="260" height="120" rx="14" fill="#6D28D9"/>
+        <text class="a5rNum" x="470" y="196">5</text>
+        <text class="a5rT" x="506" y="192">Confident bluffing</text>
+        <text class="a5rW" x="470" y="228">When context is thin, the</text>
+        <text class="a5rW" x="470" y="246">model fills the gap with a</text>
+        <text class="a5rW" x="470" y="264">confident guess.</text>
+        <rect x="30" y="300" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a5rN" x="54" y="312">These sit ON TOP of normal AI risk - they exist because the system reaches into your real documents.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the five risks that arrive with retrieval</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Risks 1 and 2 · sensitive data and who can see what<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The two that keep security teams up at night, because they are about data getting where it should not.</p>
+        <ul>
+          <li><strong>PII in embeddings.</strong> To make documents searchable, RAG turns them into embeddings stored in a vector database. If those documents contain personal or sensitive data, that data now lives in a second place - the index - which your deletion and retention rules may not cover. "We deleted the file" does not mean you deleted its embedding.</li>
+          <li><strong>Access control at retrieval.</strong> This is the big one. A naive RAG system searches <em>all</em> documents for <em>every</em> user. So a junior employee can ask a question and get an answer grounded in the board's confidential minutes - because retrieval never checked whether they were allowed to see them. Retrieval must filter by who is asking, not just by what is relevant.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>The one-sentence version for your security review</strong>
+          "Our RAG system must retrieve only documents the requesting user is already permitted to read." If that sentence is not enforced at the retrieval step, you have built a very efficient way to leak documents.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Risks 3 and 5 · stale answers and confident bluffing<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two failures of freshness and honesty - the ones users actually notice.</p>
+        <ul>
+          <li><strong>Staleness.</strong> RAG is only as current as the documents in its index. If a policy changed but the old version is still in the index, the system will confidently retrieve and quote the outdated one. Freshness is a pipeline discipline: what is indexed, how often it refreshes, and how the obsolete version is removed.</li>
+          <li><strong>Confident bluffing when context is thin.</strong> When retrieval returns weak or partial passages, a poorly governed model does not say "I'm not sure" - it fills the gap with a plausible guess and presents it in the same authoritative tone as a grounded answer. The thinner the context, the more dangerous the confidence.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The number that was right last year.</strong> An internal finance assistant (anonymized) kept quoting a spending-approval threshold that had been lowered months earlier - the superseded memo was still in the index alongside the new one, and retrieval sometimes surfaced the old one. Nobody had lied; the pipeline had simply never retired the stale document. The fix was freshness governance, not a smarter model.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Risk 4 · vendor lock-in through your embeddings<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The quiet, strategic one. When you build a RAG system, you turn your whole corpus into embeddings using a specific model. Those embeddings are <strong>model-specific</strong> - the numbers only mean something in the world of the model that produced them. You cannot mix embeddings from one model with a query from another.</p>
+        <ul>
+          <li><strong>Why it is lock-in:</strong> switching embedding models - to a cheaper one, a better one, or a different vendor - means re-embedding your <em>entire</em> corpus. For a large knowledge base that is a real cost in compute, time, and coordination.</li>
+          <li><strong>The leadership move:</strong> know the switching cost before you commit, and treat "how hard is it to change embedding models later" as a procurement question, not an afterthought. It rarely blocks a decision, but it should never be a surprise.</li>
+        </ul>
+        <p>This is the one risk with no clever control - only clear-eyed awareness. The others you mitigate; this one you price in.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: CONTROLS ============ -->
+  <section class="section" id="controls">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the controls you can insist on</span>
+      <h2>Refusal and citations as controls you can insist on <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Here is the reassuring part. The most powerful RAG controls are things you can demand in plain language, and they stack into a governance layer at the retrieval and answer steps. You do not build them - you require them, and you verify they are on.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A four-layer governance stack applied to a RAG request: an access filter at retrieval, a refusal threshold, a citation requirement, and an audit log">
+        <style>
+          .a5cT { font: 700 15px Inter, sans-serif; fill: #FFFFFF; }
+          .a5cW { font: 400 12.5px Inter, sans-serif; fill: #EDE9FB; }
+          .a5cH { font: 700 15px Inter, sans-serif; fill: #211B33; }
+          .a5cS { font: 400 12.5px Inter, sans-serif; fill: #4A4360; }
+          .a5cN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .a5cArr { stroke: #A78BFA; stroke-width: 2.5; fill: none; marker-end: url(#a5cAh); }
+        </style>
+        <defs>
+          <marker id="a5cAh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#8B5CF6" stroke-width="1.6"/>
+          </marker>
+        </defs>
+        <rect x="40" y="130" width="120" height="70" rx="12" fill="#4C1D95"/>
+        <text class="a5cT" x="60" y="160">Request</text>
+        <text class="a5cW" x="60" y="180">from a user</text>
+        <rect x="220" y="40" width="180" height="80" rx="12" fill="#6D28D9"/>
+        <text class="a5cT" x="240" y="70">1 · Access filter</text>
+        <text class="a5cW" x="240" y="92">only docs this user</text>
+        <text class="a5cW" x="240" y="110">may read</text>
+        <rect x="220" y="150" width="180" height="80" rx="12" fill="#8B5CF6"/>
+        <text class="a5cT" x="240" y="180">2 · Refusal check</text>
+        <text class="a5cW" x="240" y="202">thin context ?</text>
+        <text class="a5cW" x="240" y="220">→ say "I don't know"</text>
+        <rect x="450" y="95" width="180" height="80" rx="12" fill="#6D28D9"/>
+        <text class="a5cT" x="470" y="125">3 · Citation rule</text>
+        <text class="a5cW" x="470" y="147">answer must carry</text>
+        <text class="a5cW" x="470" y="165">a supporting quote</text>
+        <rect x="680" y="95" width="160" height="80" rx="12" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a5cH" x="700" y="125">4 · Audit log</text>
+        <text class="a5cS" x="700" y="147">who asked, what</text>
+        <text class="a5cS" x="700" y="165">was retrieved</text>
+        <line class="a5cArr" x1="162" y1="150" x2="216" y2="90"/>
+        <line class="a5cArr" x1="162" y1="180" x2="216" y2="185"/>
+        <line class="a5cArr" x1="402" y1="95" x2="446" y2="125"/>
+        <line class="a5cArr" x1="402" y1="185" x2="446" y2="150"/>
+        <line class="a5cArr" x1="632" y1="135" x2="676" y2="135"/>
+        <rect x="40" y="255" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a5cN" x="64" y="267">Four layers you can demand in plain language: filter first, allow refusal, require a citation, log it all.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the governance stack: four controls on every request</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Let the model say "I don't know" - and restrict it to the passages<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Anthropic's guidance on reducing hallucinations reads like a governance checklist, and every item is something you can require:</p>
+        <ul>
+          <li><strong>Allow "I don't know".</strong> Explicitly permit the model to decline. A model that is forced to always answer will always answer - even when it should not. Refusal is a feature, not a failure.</li>
+          <li><strong>Restrict to provided context.</strong> Instruct it to use <em>only</em> the retrieved documents - "answer using only these passages" - so it cannot wander off into its training data.</li>
+          <li><strong>Quote first, then answer.</strong> Have the model pull the supporting quote before it writes the answer, so the answer is anchored to real text.</li>
+          <li><strong>Retract unsupported claims.</strong> Any sentence with no supporting quote gets removed. This is groundedness (from session a4) turned into an operating rule.</li>
+        </ul>
+        <div class="prompt-box good"><span class="label">★ Try it now (any chat AI)</span>You may answer only from the passages I provide. First quote the exact sentence(s) that support your answer; if the passages don't contain the answer, reply "I don't know based on the provided documents" and stop. Here is the question and the passages: [paste them, including a case where the answer is genuinely absent]</div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Require a citation, and filter access at retrieval<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two controls that turn trust from a hope into a mechanism.</p>
+        <ul>
+          <li><strong>Citations as a requirement.</strong> Anthropic's Citations feature makes the model point at the exact source text behind each claim - down to a sentence for plain text, a page for a PDF, or your own blocks for custom content. A useful detail for budget holders: the cited text does not count toward output tokens, so citing is close to free. The governance win is bigger: an answer that must carry a quote is an answer you can audit, and a model that cannot find a quote is nudged toward refusing.</li>
+          <li><strong>Access control at retrieval.</strong> The fix for risk 2. Before the search runs, filter the document set to what the requesting user is permitted to read - so retrieval physically cannot surface a restricted document. Permissions belong at the retrieval step, not bolted on after the answer is written.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>A citation tip your team will thank you for</strong>
+          Put each RAG chunk in its own document block when passing it to the model. That way citations point at the specific chunk that supported the claim, giving you sentence-level traceability instead of a vague "somewhere in these fifty pages".
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Audit logs - the control nobody demands until it is too late<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The quietest layer of the stack, and the one leaders regret skipping. An audit log records, for each request: who asked, what was retrieved, what was answered, and what was cited. It is not glamorous, and it does nothing to improve answers - which is exactly why teams under delivery pressure leave it out.</p>
+        <ul>
+          <li><strong>Why you need it:</strong> when something goes wrong - a leaked passage, a bad answer, a compliance question - the log is the only way to reconstruct what actually happened. Without it, you are guessing.</li>
+          <li><strong>What good looks like:</strong> every answer is traceable back to the exact passages and permissions that produced it. Combined with citations, this makes a RAG system genuinely accountable.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The incident nobody could explain.</strong> A team (anonymized) had a RAG assistant surface a sentence from a confidential document in a demo. Because there was no retrieval log, they could not tell whether it was a one-off, a permissions bug, or a broader leak - and had to pause the whole system while they investigated blind. The audit log they added afterward would have answered the question in minutes.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE 1 ============ -->
+  <section class="section" id="exercise-1">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 1 of 2</span>
+      <h2>The RAG risk register <span class="tag demo">★ 12 min · pen and paper</span></h2>
+    </div>
+    <p class="lede">Turn the five risks into a living document you own. A five-row register, filled honestly, is worth more than any slide about "responsible AI".</p>
+    <div class="steps">
+      <div class="step"><p>Draw a table with five rows - one per risk (PII in embeddings, access leaks, staleness, vendor lock-in, confident bluffing) - and four columns: <strong>risk · likelihood · control · owner</strong>.</p></div>
+      <div class="step"><p>For each risk, rate <strong>likelihood</strong> for your system (low / medium / high). Be honest - the high ones are where your attention should go, not where it feels comfortable.</p></div>
+      <div class="step"><p>Name the <strong>control</strong> from Part 2 that addresses each: access filtering for leaks, refusal for bluffing, freshness pipeline for staleness, deletion-from-index for PII, priced-in awareness for lock-in.</p></div>
+      <div class="step"><p>Assign an <strong>owner</strong> - a named person, not "the team". A risk with no owner is a risk nobody is actually managing. The empty owner cells are your most useful output.</p></div>
+    </div>
+    <div class="prompt-box good"><span class="label">★ Your risk-register partner (paste into any chat AI)</span>Help me build a RAG risk register. Walk me through five risks - PII in embeddings, access-control leaks, staleness, vendor lock-in, confident bluffing when context is thin. For each, ask me to rate likelihood for my system, then suggest the specific control that addresses it and prompt me to name an owner. Push back if I leave an owner blank or rate everything "low".</div>
+  </section>
+
+  <!-- ============ EXERCISE 2 ============ -->
+  <section class="section" id="exercise-2">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 2 of 2</span>
+      <h2>Write your refusal policy <span class="tag demo">★ 8 min · decision drill</span></h2>
+    </div>
+    <p class="lede">The single most valuable governance decision is knowing when your assistant should decline. Write the policy before the system is live, not after an incident.</p>
+    <div class="steps">
+      <div class="step"><p>Finish this sentence for your use case: <strong>"The assistant should say 'I don't know' rather than answer when ___."</strong> A strong default: when the retrieved passages do not actually contain the answer.</p></div>
+      <div class="step"><p>List <strong>three situations</strong> where you would rather have a refusal than a guess - for example, a legal or medical question outside the documents, a request touching restricted material, or any question where being wrong is costly.</p></div>
+      <div class="step"><p>Decide what a refusal <strong>looks like</strong> to the user: a plain "I don't have that in our documents", ideally with a next step ("try contacting ___"). A good refusal is helpful, not a dead end.</p></div>
+      <div class="step"><p>Name the failure you are preventing: a <strong>confident wrong answer</strong> is worse than an honest "I don't know", because the confident one gets trusted and acted on. Your refusal policy is what makes that tradeoff explicit.</p></div>
+    </div>
+    <div class="callout tip">
+      <strong>The mindset shift for your team</strong>
+      Many teams treat every refusal as a miss to be engineered away. Reframe it: a refusal on a question the documents genuinely do not cover is the system working correctly. The goal is not "always answer" - it is "never confidently wrong".
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session a6 <span class="tag exercise">◐ 30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Finish your five-row risk register and make sure every row has a named owner. Bring the highest-likelihood row to session a6 - it often decides whether a system is ready for production.</li>
+      <li>Write your refusal policy in one paragraph and share it with whoever owns your RAG project. Watch whether they already have one.</li>
+      <li>Ask your security or data-protection lead one question: do we know where our embeddings live, and are they covered by our deletion and retention rules?</li>
+      <li>Optional: test refusal yourself - paste a passage and ask a question the passage does not answer, with and without the "you may say I don't know" instruction. Feel the difference.</li>
+    </ul>
+    <div class="callout win">
+      <strong>★ Questions to ask your data team this week</strong>
+      <ol>
+        <li>Does retrieval filter by who is asking, so a user only ever gets answers grounded in documents they are allowed to read?</li>
+        <li>Where do our embeddings live, and are they covered by the same deletion and retention rules as the source documents?</li>
+        <li>How fresh is our index - what is indexed, how often does it refresh, and how do we retire outdated documents?</li>
+        <li>Is the assistant allowed to say "I don't know", and does every answer carry a citation we can trace?</li>
+        <li>Do we keep an audit log of who asked what and which passages were retrieved - and could we reconstruct an incident from it?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">The leader track teaches from published engineering guidance - no vendor marketing. This page covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Reduce hallucinations</span><span class="note">Part 2 · allow "I don't know", restrict to provided context, quote-first, retract unsupported claims</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Citations</span><span class="note">Part 2 · sentence/page/block-level citing · cited text is free · one chunk per document block</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">RAG governance framing (ours)</span><span class="note">Part 1 · the five retrieval risks and the access-filter-at-retrieval pattern</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">1 · A junior employee asks your RAG assistant a question and gets an answer grounded in the board's confidential minutes. The failing control is...</p>
+      <button class="qopt" type="button">A · Citations - the answer wasn't quoted</button>
+      <button class="qopt" type="button">B · Freshness - the minutes were stale</button>
+      <button class="qopt" type="button">C · Access control at retrieval - the search wasn't filtered to documents that user is permitted to read</button>
+      <p class="qwhy">Retrieval must filter by who is asking. Without that filter, a naive system searches all documents for every user - an efficient way to leak.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">2 · Which is an Anthropic-recommended way to reduce hallucinations in a RAG answer?</p>
+      <button class="qopt" type="button">A · Allow the model to say "I don't know", restrict it to the provided context, and have it quote its source before answering</button>
+      <button class="qopt" type="button">B · Force the model to always produce an answer</button>
+      <button class="qopt" type="button">C · Use the largest possible model and skip citations</button>
+      <p class="qwhy">Permit refusal, restrict to the provided passages, quote first, and retract any claim with no supporting quote. A forced-to-answer model will always answer, even when it shouldn't.</p>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">3 · Why is "vendor lock-in" a real RAG risk?</p>
+      <button class="qopt" type="button">A · Vector databases are illegal to switch</button>
+      <button class="qopt" type="button">B · Embeddings are model-specific, so switching embedding models means re-embedding your entire corpus</button>
+      <button class="qopt" type="button">C · Models refuse to read other vendors' documents</button>
+      <p class="qwhy">Embeddings only mean something to the model that produced them. Changing embedding models forces a full re-embed of the corpus - a real cost to price in up front.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 5 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>PII in embeddings</b><span>Sensitive data lands in the index too - "we deleted the file" doesn't mean you deleted its embedding.</span></div>
+      <div class="cheat-item"><b>Access leaks</b><span>A naive system searches all docs for every user. Filter retrieval by who is asking.</span></div>
+      <div class="cheat-item"><b>Staleness</b><span>RAG is only as current as the index. Freshness is a pipeline discipline: index, refresh, retire.</span></div>
+      <div class="cheat-item"><b>Vendor lock-in</b><span>Embeddings are model-specific. Switching models = re-embedding the whole corpus. Price it in.</span></div>
+      <div class="cheat-item"><b>Confident bluffing</b><span>Thin context invites a plausible guess in an authoritative tone. The refusal control exists for this.</span></div>
+      <div class="cheat-item"><b>Refusal + restrict</b><span>Allow "I don't know" and answer only from the provided passages. A forced answer is always given.</span></div>
+      <div class="cheat-item"><b>Citations</b><span>Require a supporting quote per claim. Cited text is free of output tokens; one chunk per doc block.</span></div>
+      <div class="cheat-item"><b>Audit log</b><span>Record who asked, what was retrieved, what was cited. The only way to reconstruct an incident.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 5 of 6 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="a4-judge-a-rag.html">← Previous: How to judge a RAG system</a> &nbsp;·&nbsp; <a href="a6-poc-to-prod.html">Next: From POC to production →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

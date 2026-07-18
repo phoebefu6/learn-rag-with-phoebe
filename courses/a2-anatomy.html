@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leader session 2 · Anatomy of a RAG system - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Leader session 2 of 6</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Leader track · Session 2 of 6</div>
+    <h1>Anatomy of a <span class="accent">RAG system</span></h1>
+    <p class="sub">A RAG system is not one thing you buy - it is nine moving parts, and each one is a decision your team either made on purpose or fell into by accident. This session hands you the whole machine on a single page, then teaches you to read it as a set of questions: what happens once when we build the index, what happens every time someone asks, and which of the nine parts is quietly the weakest. By the end you can walk into a design review, point at any part, and ask the one question that tells you whether it was thought through.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Leader track</span>
+      <span class="chip audience">Leaders: C-level · managers</span>
+      <span class="chip audience">No code, ever</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:4">3-20 · Concepts</span>
+      <span class="a3" style="flex:4">20-40 · Exercises</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Why knowing the parts changes the conversation</h2>
+    </div>
+    <p class="lede">In session a1 you learned the one-breath definition: retrieve the passages that matter, augment the prompt, generate a grounded answer. That is the idea. This session is the machine that makes the idea real. When a vendor or a team says "we built a RAG system", they made nine separate choices - how documents get in, how they were cut up, how they are searched, whether results are re-scored, whether answers are cited, and how anyone knows it works. Most of those choices are invisible until something goes wrong. Learn the nine parts and each one becomes a question you can ask before it goes wrong - which is the whole point of being the person funding the build.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - read after class</span>
+      <span class="pill peach">★ Try it now prompt</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you walk out with today</strong>
+      The nine parts of a RAG system in plain English, the split between index-time work (done once) and query-time work (paid per question), a leader question for every part, and a red-yellow-green way to spot the weakest part of any system you already have.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: PIPELINE ON ONE PAGE ============ -->
+  <section class="section" id="pipeline">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the whole pipeline and index-time vs query-time</span>
+      <h2>The pipeline on one page <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">Here is the entire machine. Read it left to right in two halves. The first half - documents in, chunked, embedded, stored - is <strong>index time</strong>: you do it once (and repeat only when documents change). The second half - a question comes in, gets retrieved, reranked, augmented, answered, cited - is <strong>query time</strong>: it runs on every single question, so it is where you pay per use. Underneath runs an evaluate loop that watches the whole thing.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A RAG pipeline in two halves. Index time, done once: documents are ingested, chunked, embedded, and stored in a vector database. Query time, per question: a query is retrieved, reranked, augmented into a prompt, generated into an answer, and cited. An evaluate loop runs underneath the whole system.">
+        <style>
+          .a2pT { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .a2pI { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .a2pW { font: 400 11px Inter, sans-serif; fill: #EDE9FB; }
+          .a2pS { font: 400 11px Inter, sans-serif; fill: #211B33; }
+          .a2pB { font: 700 13px Inter, sans-serif; fill: #6E6685; }
+          .a2pN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .a2pArr { stroke: #A78BFA; stroke-width: 2.5; fill: none; marker-end: url(#a2pAh); }
+          .a2pLoop { stroke: #C6961A; stroke-width: 2; fill: none; stroke-dasharray: 5 4; marker-end: url(#a2pAh); }
+        </style>
+        <defs>
+          <marker id="a2pAh" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6" fill="none" stroke="#8B5CF6" stroke-width="1.6"/>
+          </marker>
+        </defs>
+
+        <!-- INDEX TIME band label -->
+        <rect x="24" y="44" width="420" height="24" rx="8" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a2pI" x="40" y="61">INDEX TIME · done once (repeat only when docs change)</text>
+        <!-- QUERY TIME band label -->
+        <rect x="456" y="44" width="400" height="24" rx="8" fill="#6D28D9"/>
+        <text class="a2pT" x="472" y="61">QUERY TIME · runs on every question</text>
+
+        <!-- Index-time boxes -->
+        <rect x="24" y="90" width="120" height="52" rx="11" fill="#4C1D95"/>
+        <text class="a2pT" x="40" y="113">1 · Documents</text>
+        <text class="a2pW" x="40" y="130">the raw sources</text>
+        <rect x="164" y="90" width="120" height="52" rx="11" fill="#6D28D9"/>
+        <text class="a2pT" x="180" y="113">2 · Ingest</text>
+        <text class="a2pW" x="180" y="130">load + clean</text>
+        <rect x="304" y="90" width="120" height="52" rx="11" fill="#8B5CF6"/>
+        <text class="a2pT" x="320" y="113">3 · Chunk</text>
+        <text class="a2pW" x="320" y="130">cut into passages</text>
+        <rect x="164" y="162" width="120" height="52" rx="11" fill="#8B5CF6"/>
+        <text class="a2pT" x="180" y="185">4 · Embed</text>
+        <text class="a2pW" x="180" y="202">meaning as numbers</text>
+        <rect x="304" y="162" width="120" height="52" rx="11" fill="#F5F3FF" stroke="#A78BFA"/>
+        <text class="a2pI" x="320" y="185">5 · Store</text>
+        <text class="a2pS" x="320" y="202">vector database</text>
+
+        <!-- Query-time boxes -->
+        <rect x="456" y="90" width="120" height="52" rx="11" fill="#4C1D95"/>
+        <text class="a2pT" x="472" y="113">6 · Query</text>
+        <text class="a2pW" x="472" y="130">the question</text>
+        <rect x="596" y="90" width="120" height="52" rx="11" fill="#6D28D9"/>
+        <text class="a2pT" x="612" y="113">7 · Retrieve</text>
+        <text class="a2pW" x="612" y="130">fetch top passages</text>
+        <rect x="736" y="90" width="120" height="52" rx="11" fill="#8B5CF6"/>
+        <text class="a2pT" x="752" y="113">8 · Rerank</text>
+        <text class="a2pW" x="752" y="130">re-score the best</text>
+        <rect x="596" y="162" width="120" height="52" rx="11" fill="#8B5CF6"/>
+        <text class="a2pT" x="612" y="185">9 · Augment</text>
+        <text class="a2pW" x="612" y="202">passages + query</text>
+        <rect x="736" y="162" width="120" height="52" rx="11" fill="#6D28D9"/>
+        <text class="a2pT" x="752" y="185">10 · Generate</text>
+        <text class="a2pW" x="752" y="202">the model answers</text>
+        <rect x="736" y="234" width="120" height="52" rx="11" fill="#4C1D95"/>
+        <text class="a2pT" x="752" y="257">11 · Cite</text>
+        <text class="a2pW" x="752" y="274">point at the source</text>
+
+        <!-- Index-time arrows -->
+        <line class="a2pArr" x1="146" y1="116" x2="160" y2="116"/>
+        <line class="a2pArr" x1="286" y1="116" x2="300" y2="116"/>
+        <line class="a2pArr" x1="364" y1="144" x2="300" y2="188"/>
+        <line class="a2pArr" x1="286" y1="188" x2="300" y2="188"/>
+        <!-- Store hands to Retrieve -->
+        <line class="a2pArr" x1="426" y1="188" x2="656" y2="146"/>
+
+        <!-- Query-time arrows -->
+        <line class="a2pArr" x1="578" y1="116" x2="592" y2="116"/>
+        <line class="a2pArr" x1="718" y1="116" x2="732" y2="116"/>
+        <line class="a2pArr" x1="796" y1="144" x2="676" y2="188" />
+        <line class="a2pArr" x1="716" y1="188" x2="732" y2="188"/>
+        <line class="a2pArr" x1="796" y1="216" x2="796" y2="230"/>
+
+        <!-- Evaluate loop underneath -->
+        <rect x="304" y="330" width="272" height="52" rx="11" fill="#F5F3FF" stroke="#C6961A"/>
+        <text class="a2pI" x="322" y="353">Evaluate loop</text>
+        <text class="a2pS" x="322" y="371">is retrieval finding it? are answers grounded?</text>
+        <line class="a2pLoop" x1="440" y1="330" x2="380" y2="220"/>
+        <line class="a2pLoop" x1="500" y1="330" x2="770" y2="292"/>
+
+        <!-- takeaway -->
+        <rect x="24" y="404" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a2pN" x="48" y="416">Index once and store it; then pay per question at query time. The two halves have very different cost shapes.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the whole RAG machine, split into index-time and query-time</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Index time vs query time - the split that governs your bill<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The single most useful line to draw through a RAG system is the line between <strong>index time</strong> and <strong>query time</strong>, because they cost money in completely different ways.</p>
+        <ul>
+          <li><strong>Index time is a one-off (per batch of documents).</strong> Ingesting, chunking, embedding, and storing your documents happens once. You pay it again only when documents change or you re-index. It is a project cost, not a running cost.</li>
+          <li><strong>Query time is a per-question cost.</strong> Every question runs retrieve, rerank, augment, generate, cite. This is the meter that spins all day, forever. A design that is a little wasteful here is a bill that grows with adoption.</li>
+        </ul>
+        <p>Leaders who miss this line fund the wrong thing - they worry about the one-time indexing cost and ignore the per-query cost that actually scales. Session a3 puts real numbers on both. For now, just hold the shape: build once, pay per use.</p>
+        <div class="prompt-box good"><span class="label">★ Try it now (any chat AI)</span>Explain to me, using a library as the analogy, the difference between the one-time work of cataloguing every book (index time) and the per-visit work of answering a reader's question (query time) in a retrieval system. Then tell me which of the two costs grows as more people use the system.</div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The nine parts in plain English<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Strip away the jargon and every RAG system is these nine jobs. Six are the moving parts leaders fund; the diagram numbers a few sub-steps, but this is the list to memorize.</p>
+        <table class="clean">
+          <thead><tr><th>Part</th><th>What it does, in one line</th><th>When</th></tr></thead>
+          <tbody>
+            <tr><td>Ingest</td><td>Pull documents in and clean them up</td><td>Index</td></tr>
+            <tr><td>Chunk</td><td>Cut each document into passage-sized pieces</td><td>Index</td></tr>
+            <tr><td>Embed</td><td>Turn each passage into a list of numbers that captures its meaning</td><td>Index</td></tr>
+            <tr><td>Store</td><td>Keep those numbers in a vector database you can search fast</td><td>Index</td></tr>
+            <tr><td>Retrieve</td><td>For a question, fetch the closest-in-meaning passages</td><td>Query</td></tr>
+            <tr><td>Rerank</td><td>Re-score the fetched candidates and keep the truly best few</td><td>Query</td></tr>
+            <tr><td>Augment</td><td>Assemble the passages plus the question into one prompt</td><td>Query</td></tr>
+            <tr><td>Generate</td><td>Have the model write an answer from the supplied passages</td><td>Query</td></tr>
+            <tr><td>Cite</td><td>Attach the source each part of the answer came from</td><td>Query</td></tr>
+          </tbody>
+        </table>
+        <p>Notice how ordinary each job is. There is no magic - just a pipeline. The skill is knowing which job is weak, which is why Part 2 turns every one of these into a question you can ask.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>A document becomes "nodes" - the vocabulary you will hear<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Your team will not always say "chunk". The most common framework, LlamaIndex, calls the raw input a <strong>Document</strong> and each chunk a <strong>Node</strong> - so "we generated 40,000 nodes from 1,200 documents" just means "we cut 1,200 files into 40,000 passages". Do not let the vocabulary hide the plainness of the idea: a node is a chunk, a chunk is a passage, and the size of those passages is a real design choice you will interrogate in Part 2. Knowing the word lets you follow the conversation; knowing it is just a chunk keeps you from being impressed by it.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: EACH PART AS A QUESTION ============ -->
+  <section class="section" id="parts-as-questions">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the LlamaIndex five stages and the question each part earns you</span>
+      <h2>What each part is for, and the question it earns you <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">The industry has a tidy way to group the nine jobs into five stages, and it is worth borrowing because it is how your team already thinks. LlamaIndex names them Loading, Indexing, Storing, Querying, and Evaluation. The first three are index-time; querying is per-question; evaluation runs across everything. Here they are as a ladder - and then each rung becomes a question you can ask out loud.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The five LlamaIndex stages as a ladder of bars: Loading and Indexing and Storing are index-time, Querying is per-question, and Evaluation runs across the whole system.">
+        <style>
+          .a2sT { font: 700 15px Inter, sans-serif; fill: #FFFFFF; }
+          .a2sI { font: 700 15px Inter, sans-serif; fill: #211B33; }
+          .a2sW { font: 400 12px Inter, sans-serif; fill: #EDE9FB; }
+          .a2sS { font: 400 12px Inter, sans-serif; fill: #211B33; }
+          .a2sTag { font: 700 11px Inter, sans-serif; fill: #6E6685; }
+          .a2sN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <!-- five bars as a ladder, widening down -->
+        <rect x="60" y="40" width="440" height="42" rx="10" fill="#4C1D95"/>
+        <text class="a2sT" x="80" y="66">1 · Loading</text>
+        <text class="a2sW" x="220" y="66">ingest documents into the system</text>
+        <text class="a2sTag" x="520" y="66">index time</text>
+
+        <rect x="60" y="94" width="500" height="42" rx="10" fill="#6D28D9"/>
+        <text class="a2sT" x="80" y="120">2 · Indexing</text>
+        <text class="a2sW" x="220" y="120">chunk + embed into searchable form</text>
+        <text class="a2sTag" x="580" y="120">index time</text>
+
+        <rect x="60" y="148" width="560" height="42" rx="10" fill="#8B5CF6"/>
+        <text class="a2sT" x="80" y="174">3 · Storing</text>
+        <text class="a2sW" x="220" y="174">keep the index so you do not rebuild it</text>
+        <text class="a2sTag" x="640" y="174">index time</text>
+
+        <rect x="60" y="202" width="620" height="42" rx="10" fill="#A78BFA"/>
+        <text class="a2sI" x="80" y="228">4 · Querying</text>
+        <text class="a2sS" x="220" y="228">retrieve + rerank + augment + generate + cite</text>
+        <text class="a2sTag" x="700" y="228">per question</text>
+
+        <rect x="60" y="256" width="680" height="42" rx="10" fill="#F5F3FF" stroke="#C6961A"/>
+        <text class="a2sI" x="80" y="282">5 · Evaluation</text>
+        <text class="a2sS" x="220" y="282">measure retrieval quality + answer groundedness</text>
+        <text class="a2sTag" x="760" y="282">across all</text>
+
+        <rect x="60" y="312" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="a2sN" x="84" y="324">Five stages, one owner each. If nobody owns Evaluation, nobody knows whether the other four work.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the five stages as a ladder, from loading to evaluation</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Each part, and the question that tells you it was thought through<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>This is the heart of the session. You do not need to build any of these - you need to ask the question that separates a deliberate choice from an accident.</p>
+        <table class="clean">
+          <thead><tr><th>Part</th><th>The question it earns you</th></tr></thead>
+          <tbody>
+            <tr><td>Ingest</td><td>"Which documents are in, which are out, and how do updates get in?"</td></tr>
+            <tr><td>Chunking</td><td>"How did we cut our documents, and did we test that choice?"</td></tr>
+            <tr><td>Embedding</td><td>"Which embedding model turns our text into meaning, and what did it cost to run over everything?"</td></tr>
+            <tr><td>Store</td><td>"Where do the embeddings live, and how fast can we search them?"</td></tr>
+            <tr><td>Retrieval</td><td>"How many passages do we fetch, and how do we know they're the right ones?"</td></tr>
+            <tr><td>Reranking</td><td>"Do we re-score results before showing them, or do we trust the first search?"</td></tr>
+            <tr><td>Augment</td><td>"What exactly ends up in the prompt, and could sensitive text leak in?"</td></tr>
+            <tr><td>Generate</td><td>"Does the model answer only from the passages, or is it allowed to improvise?"</td></tr>
+            <tr><td>Citations</td><td>"Can every answer point to its source?"</td></tr>
+            <tr><td>Evaluation</td><td>"What's our groundedness score, and who owns it?"</td></tr>
+          </tbody>
+        </table>
+        <p>The querying stage, in LlamaIndex terms, is a small chain you will hear named: a <strong>retriever</strong> fetches candidates, a <strong>node postprocessor</strong> reranks or filters them, and a <strong>response synthesizer</strong> writes the answer. Three names, three of your questions - retrieval, reranking, generate.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why chunking and citations are the two parts leaders should watch<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Of the nine parts, two repay a leader's attention far more than the rest.</p>
+        <ul>
+          <li><strong>Chunking decides what "a passage" even is.</strong> Cut too big and the model drowns in irrelevant text; cut too small and a passage loses the context that made it meaningful. This one choice, made early and rarely revisited, quietly caps the quality of everything downstream. Ask whether it was tested, not just picked.</li>
+          <li><strong>Citations are your audit trail.</strong> A system that cannot point at the source of an answer cannot be trusted in any regulated or high-stakes setting. Citations are not a nice-to-have feature bolted on at the end - they are a design decision made back at chunking, because you can only cite what you tracked from the start.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The assistant that could not cite.</strong> A team (anonymized) shipped a helpful internal Q&amp;A bot, then legal asked "show me where each answer came from." The system had chunked documents without keeping track of which file each passage came from - so it could answer but never cite. Retrofitting citations meant re-doing the ingest and chunk steps. A question at design review - "can every answer point to its source?" - would have caught it in an hour instead of a quarter.</p>
+        </div>
+        <div class="callout tip">
+          <strong>The tell of a mature system</strong>
+          Ask "who owns evaluation?" If the answer is a name and a number - "Priya owns it, groundedness is at 0.9" - the system is engineered. If the answer is a shrug or "the whole team", nobody is measuring whether retrieval actually finds the right passages, and the other eight parts are running blind.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>How LangChain names the same parts<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You will hear the same nine jobs under different names depending on which toolkit your team uses. LangChain, the other common framework, describes its pipeline as: load documents, split them with a text splitter, create embeddings, put them in a vector store, then a retriever runs a similarity search that fetches the top <em>k</em> passages, which are handed to the model to generate. It is the exact same machine - loading, chunking, embedding, storing, retrieving, generating - just with the plumbing named differently. When your team says "we set k to 5", they mean "we fetch the five closest passages", which is your retrieval question in disguise. Do not let two vocabularies convince you there are two different systems; there is one anatomy, and you now know all nine parts of it.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ EXERCISE 1 ============ -->
+  <section class="section" id="exercise-1">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 1 of 2</span>
+      <h2>Map your own system's nine parts <span class="tag demo">★ 12 min · pen and paper</span></h2>
+    </div>
+    <p class="lede">The anatomy becomes yours the moment you draw it for a real system. Take the RAG idea you sorted as a "real RAG project" in session a1 - or one your team already runs - and lay its nine parts on paper.</p>
+    <div class="steps">
+      <div class="step"><p>Write the nine parts down the left of a page: ingest, chunk, embed, store, retrieve, rerank, augment, generate, cite. Draw the index-time / query-time line after "store".</p></div>
+      <div class="step"><p>For each part, mark one of three things: <strong>exists</strong> (we do this on purpose), <strong>missing</strong> (we do not do this at all), or <strong>accidental</strong> (it happens but nobody decided how).</p></div>
+      <div class="step"><p>Now write the owner's name next to each part. Any part with no name is a risk - it means a real decision is being made by default, not by a person.</p></div>
+      <div class="step"><p>Circle the one part that is both important and un-owned. That circle is the single most valuable output of this exercise - it is the conversation to have this week.</p></div>
+    </div>
+    <div class="prompt-box good"><span class="label">★ Your mapping partner (paste into any chat AI)</span>You are helping me map the anatomy of a RAG system I am responsible for. The nine parts are ingest, chunk, embed, store, retrieve, rerank, augment, generate, cite. I will describe my system in a few sentences. For each of the nine parts, ask me one sharp question to find out whether it exists on purpose, is missing, or happens by accident, and who owns it. At the end, tell me which part looks weakest and why. Here is my system: [describe it]</div>
+  </section>
+
+  <!-- ============ EXERCISE 2 ============ -->
+  <section class="section" id="exercise-2">
+    <div class="section-kicker">
+      <span class="klabel">Exercise 2 of 2</span>
+      <h2>The "which part is weakest" walkthrough <span class="tag demo">★ 8 min · a system you have</span></h2>
+    </div>
+    <p class="lede">A traffic-light pass over the nine parts turns a vague worry - "I'm not sure our bot is any good" - into a specific, fundable fix. Rate each part red, yellow, or green.</p>
+    <div class="steps">
+      <div class="step"><p>Go part by part and assign a colour. <strong>Green</strong>: we chose this deliberately and tested it. <strong>Yellow</strong>: we chose it but never checked it works. <strong>Red</strong>: it is missing, or nobody knows.</p></div>
+      <div class="step"><p>Pay special attention to the two you learned to watch: chunking (was the cut tested?) and citations (can every answer point to a source?). A red on either is a headline finding.</p></div>
+      <div class="step"><p>Look at evaluation last. If evaluation is red, quietly downgrade your confidence in every green - because a green you never measured is really a yellow.</p></div>
+      <div class="step"><p>Pick the single reddest part that is also cheap to fix. That is your first move - and session a3 will help you see why the cheap fixes are usually chunking, reranking, and a refusal threshold, not a bigger model.</p></div>
+    </div>
+    <div class="callout tip">
+      <strong>Weakest-link thinking beats average thinking</strong>
+      A RAG system is only as good as its worst part. Nine greens and one red does not average out to "pretty good" - the one red part (say, no citations, or untested chunking) can sink the whole thing. Fund the reddest part first, not the flashiest.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session a3 <span class="tag exercise">◐ 30 min total</span></h2>
+    </div>
+    <ul>
+      <li>Finish the nine-part map for at least one real system, with owners named. Keep it - session a3 puts cost on each part, and a4 puts trust on evaluation.</li>
+      <li>Run the traffic-light pass and write one sentence naming your reddest, cheapest-to-fix part.</li>
+      <li>Ask one team member "who owns evaluation?" and notice whether you get a name and a number, or a shrug.</li>
+      <li>Optional: skim the builder track's b2 session on chunking - you do not need the code, but seeing chunks get cut makes the "was it tested?" question concrete.</li>
+    </ul>
+    <div class="callout win">
+      <strong>★ Questions to ask your data team this week</strong>
+      <ol>
+        <li>Can you walk me through our nine parts - ingest to cite - and tell me which are deliberate and which just happen?</li>
+        <li>How did we chunk our documents, and did we test that choice against any alternative?</li>
+        <li>At query time, how many passages do we retrieve, and do we rerank them before the model sees them?</li>
+        <li>Can every answer point to the exact source passage it came from - and if not, why not?</li>
+        <li>What is our groundedness score, who owns evaluation, and how often do they look at it?</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">The leader track teaches from published engineering guidance and course curricula - no vendor marketing. This page covers:</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">LlamaIndex · Understanding RAG (the five stages)</span><span class="note">Parts 1 &amp; 2 · Loading, Indexing, Storing, Querying, Evaluation · Documents to Nodes · the query chain</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">LangChain · RAG pipeline (load, split, embed, store, retrieve, generate)</span><span class="note">Part 2 · the same anatomy under different names · top-k retrieval</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">DeepLearning.AI · Building Applications with Vector Databases</span><span class="note">Part 1 · what the store step is and why fast search matters</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · The difference between index-time and query-time work is best described as...</p>
+      <button class="qopt" type="button">A · Index time is fast and query time is slow</button>
+      <button class="qopt" type="button">B · Index time (ingest, chunk, embed, store) is done once; query time (retrieve, rerank, augment, generate, cite) runs on every question</button>
+      <button class="qopt" type="button">C · Index time is for text and query time is for images</button>
+      <p class="qwhy">Index once, then pay per question. Index-time work is a project cost; query-time work is the running cost that grows with adoption.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · "Chunking" in a RAG system means...</p>
+      <button class="qopt" type="button">A · Deleting old documents in batches</button>
+      <button class="qopt" type="button">B · Splitting the answer into short sentences for the user</button>
+      <button class="qopt" type="button">C · Cutting each document into passage-sized pieces (nodes) before they are embedded and stored</button>
+      <p class="qwhy">Chunking cuts documents into passages - LlamaIndex calls each one a Node. The size of the cut is a real, testable design choice that caps downstream quality.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Which part of the anatomy most directly enables an answer to point at its source?</p>
+      <button class="qopt" type="button">A · Citations - which depend on tracking, from ingest and chunking onward, which document each passage came from</button>
+      <button class="qopt" type="button">B · Embedding - because numbers are precise</button>
+      <button class="qopt" type="button">C · Generation - because the model writes the source itself</button>
+      <p class="qwhy">Citations are only possible if the system tracked each passage's source from the start. That is why "can every answer cite its source?" is a design-review question, not a final-feature request.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Leader session 2 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The nine parts</b><span>Ingest, chunk, embed, store, retrieve, rerank, augment, generate, cite. One pipeline, no magic.</span></div>
+      <div class="cheat-item"><b>Index time vs query time</b><span>Index once (ingest → store); pay per question at query time (retrieve → cite). The meter spins at query time.</span></div>
+      <div class="cheat-item"><b>The five stages</b><span>LlamaIndex: Loading, Indexing, Storing, Querying, Evaluation. First three are index-time.</span></div>
+      <div class="cheat-item"><b>Documents to nodes</b><span>A Document is your file; a Node is a chunk. "40k nodes" just means "40k passages".</span></div>
+      <div class="cheat-item"><b>The query chain</b><span>Retriever fetches → node postprocessor reranks → response synthesizer answers.</span></div>
+      <div class="cheat-item"><b>Two parts to watch</b><span>Chunking (was the cut tested?) and citations (can every answer point to a source?).</span></div>
+      <div class="cheat-item"><b>Weakest link</b><span>A system is only as good as its worst part. Fund the reddest part, not the flashiest.</span></div>
+      <div class="cheat-item"><b>Who owns evaluation?</b><span>A name and a number = engineered. A shrug = the other eight parts run blind.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Leader session 2 of 6 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="a1-what-rag-is.html">← Prev: What RAG is</a> &nbsp;·&nbsp; <a href="a3-cost-quality.html">Next: Cost vs quality →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

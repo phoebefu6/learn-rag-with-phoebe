@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 7 · Grounding &amp; citations - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 7 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 7 of 10</div>
+    <h1>Grounding and citations: <span class="accent">answer from the sources, or not at all</span></h1>
+    <p class="sub">Retrieval hands you the right passages. Now the model has to use them - and only them. This session is about the discipline that turns a fluent guesser into a trustworthy support bot: answer strictly from the retrieved context, attach a citation to every claim, and refuse when the answer simply is not there. You will write the grounding prompt, wire Anthropic's Citations on a document block, and treat "I do not have that in our documents" as a feature, not a bug. Recall is now reading Corpus C, a real company knowledge base.</p>
+    <div class="chip-row">
+      <span class="chip level">🟠 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">Session 7 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:3">3-18 · Concepts</span>
+      <span class="a3" style="flex:5">18-40 · Build-along</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The other half of RAG</h2>
+    </div>
+    <p class="lede">For six sessions we made retrieval good: embeddings, chunking, vector stores, metadata, hybrid search, reranking. But a perfect top-k is worthless if the model then ignores it and answers from memory. <strong>Grounding is the contract that the answer must come from the retrieved context - and only from it.</strong> Add a citation to every claim so a reader can check it, and a refusal path for when the context does not contain the answer, and you have the difference between a demo and a support bot you can put in front of customers.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      Recall's grounding-and-refusal system prompt, an understanding of how Anthropic Citations pins each claim to a source location, and a felt sense - in the live playground - of the exact moment retrieval is too weak to answer, where a good bot refuses instead of guessing.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: GROUNDED GENERATION ============ -->
+  <section class="section" id="grounded">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers grounded generation + the prompt</span>
+      <h2>Grounded generation: use only what you were handed <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">The generation step of RAG takes the retrieved passages, the user's question, and a system instruction, and asks the model to write an answer. Grounding is what you put in that instruction: <em>answer using only the provided context; if it is not there, say you do not know; cite the source of every claim.</em> Get those three sentences right and most hallucinations disappear.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Retrieved passages and a question flow into a grounding prompt that says answer using only these passages, producing an answer with a citation to the source id">
+        <style>
+          .b7gBoxT { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; rx: 10; }
+          .b7gBoxD { fill: #6D28D9; rx: 10; }
+          .b7gBoxG { fill: #4C1D95; rx: 10; }
+          .b7gL { font: 600 12.5px Inter, sans-serif; fill: #211B33; }
+          .b7gLw { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b7gS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b7gSw { font: 600 11px Inter, sans-serif; fill: #E9E3FB; }
+          .b7gAr { stroke: #8B5CF6; stroke-width: 2.5; fill: none; marker-end: url(#b7gAh); }
+          .b7gN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .b7gCite { font: 700 12px Inter, sans-serif; fill: #C6961A; }
+        </style>
+        <defs>
+          <marker id="b7gAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <!-- retrieved passages -->
+        <rect class="b7gBoxT" x="30" y="40" width="200" height="52" rx="10"/>
+        <text class="b7gL" x="44" y="63">[C-refund] Refunds in 5-7</text>
+        <text class="b7gS" x="44" y="80">business days, 30-day window</text>
+        <rect class="b7gBoxT" x="30" y="104" width="200" height="52" rx="10"/>
+        <text class="b7gL" x="44" y="127">[C-ship] Standard 3-5 days,</text>
+        <text class="b7gS" x="44" y="144">express next business day</text>
+        <text class="b7gS" x="44" y="184">top-k retrieved passages</text>
+        <!-- question -->
+        <rect class="b7gBoxT" x="30" y="228" width="200" height="46" rx="10"/>
+        <text class="b7gL" x="44" y="256">"how long for a refund?"</text>
+        <text class="b7gS" x="44" y="292">the user's question</text>
+        <!-- prompt -->
+        <rect class="b7gBoxD" x="320" y="110" width="230" height="130" rx="10"/>
+        <text class="b7gLw" x="335" y="140">Grounding prompt</text>
+        <text class="b7gSw" x="335" y="164">Answer using ONLY these</text>
+        <text class="b7gSw" x="335" y="182">passages. If the answer is</text>
+        <text class="b7gSw" x="335" y="200">not present, say you do</text>
+        <text class="b7gSw" x="335" y="218">not know. Cite the source id.</text>
+        <!-- answer -->
+        <rect class="b7gBoxG" x="640" y="120" width="210" height="110" rx="10"/>
+        <text class="b7gLw" x="655" y="150">Answer</text>
+        <text class="b7gSw" x="655" y="174">Refunds arrive within 5-7</text>
+        <text class="b7gSw" x="655" y="192">business days to your</text>
+        <text class="b7gSw" x="655" y="210">original payment method.</text>
+        <text class="b7gCite" x="655" y="228" style="fill:#FFD873">[C-refund]</text>
+        <!-- arrows -->
+        <path class="b7gAr" d="M 230 130 L 315 150"/>
+        <path class="b7gAr" d="M 230 250 L 315 210"/>
+        <path class="b7gAr" d="M 550 175 L 635 175"/>
+        <rect x="30" y="312" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b7gN" x="54" y="324">Context + question + "use only this" instruction in, cited answer out. The citation is not decoration - it is the audit trail.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - grounded generation: retrieved context plus a strict instruction produces a cited answer</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The three moves of a grounding prompt<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Anthropic's "Reduce hallucinations" guidance reads almost like a checklist for a RAG system prompt. Three moves do most of the work:</p>
+        <ul>
+          <li><strong>Restrict to the provided context.</strong> Tell the model explicitly that the answer must come from the passages you supplied, not its training data. This is the single highest-leverage sentence in the whole system.</li>
+          <li><strong>Allow "I do not know."</strong> Give the model permission to say it cannot find the answer. Models hallucinate partly because they feel obliged to produce something; remove that obligation and the guessing drops.</li>
+          <li><strong>Quote first, then answer.</strong> Ask the model to pull the supporting sentence out of the context before it writes the answer. If it cannot find a supporting quote, it should not make the claim - and it should retract anything it cannot back with a quote.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Writing the grounding prompt for Recall<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is the pattern applied to Recall over Corpus C. Notice it does three things: sets the rule, formats each passage with a visible source id, and asks for a citation on every claim.</p>
+        <div class="prompt-box good"><span class="label">Python · a grounded-answer prompt template</span>SYSTEM = """You are Recall, a support assistant.
+Answer the user's question using ONLY the context passages below.
+If the answer is not in the context, reply exactly:
+"I do not have that in our documents."
+Do not use outside knowledge. Cite the source id in
+[brackets] after each claim it supports."""
+
+def build_prompt(question, passages):
+    # each passage carries its source id so the model can cite it
+    context = "\n\n".join(
+        f"[{p['id']}] {p['text']}" for p in passages
+    )
+    user = f"Context:\n{context}\n\nQuestion: {question}"
+    return SYSTEM, user
+
+passages = [
+    {"id": "C-refund", "text": "Refunds are issued to the original "
+     "payment method within 5 to 7 business days..."},
+    {"id": "C-ship", "text": "Standard shipping takes 3 to 5 business days..."},
+]
+system, user = build_prompt("how long for a refund?", passages)</div>
+        <p>The model now has everything it needs to answer <em>and</em> nothing it needs to make up. The source ids in the context are what make citations possible - the model can point back to exactly the passage it used.</p>
+        <div class="callout tip">
+          <strong>Restrict-to-context is a spectrum</strong>
+          "Stuffing" every retrieved passage into the prompt and hoping the model picks the right one is the weakest form. Restricting to context ("use only these") is stronger. Quote-first-then-answer is strongest, because it forces the model to locate evidence before it writes - the closest a prompt can get to a proof.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Three ways to hand context to the model<span class="mini">3 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The same retrieved passages can be presented to the model in ways that range from careless to rigorous. Know all three, and reach for the strongest your latency budget allows.</p>
+        <table class="clean">
+          <thead><tr><th>Technique</th><th>What it does</th><th>Grounding strength</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Stuffing context</strong></td><td>Drop all top-k passages into the prompt, no instruction to stick to them</td><td>Weak - model may still answer from memory</td></tr>
+            <tr><td><strong>Restrict-to-context</strong></td><td>Add "answer using only these passages; say you do not know otherwise"</td><td>Strong - cuts most hallucinations</td></tr>
+            <tr><td><strong>Quote-first-then-answer</strong></td><td>Model extracts the supporting sentence, then answers, and retracts any claim with no quote</td><td>Strongest - evidence before assertion</td></tr>
+          </tbody>
+        </table>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The confident wrong answer.</strong> A support team (anonymized) shipped a bot that stuffed context but never told the model to stay inside it. Asked about a policy the KB did not cover, it invented a plausible-sounding 90-day return window from its training data. One sentence - "if it is not in the context, say you do not know" - turned that into an honest "I do not have that in our documents." Same retrieval, one line of prompt.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: CITATIONS + REFUSAL ============ -->
+  <section class="section" id="citations">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers citations + the refusal guardrail</span>
+      <h2>Citations and refusal: the two trust primitives <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Grounding tells the model to use the context. Citations let a reader verify it used the context. Refusal handles the case the context does not cover. Together they are what make a RAG answer auditable - a claim you can click through to its source, and an honest blank where there is no source.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The refusal decision: if the best retrieval score is above the threshold the model answers with a citation, otherwise it refuses instead of guessing">
+        <style>
+          .b7cBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b7cDia { fill: #6D28D9; }
+          .b7cGood { fill: #4C1D95; }
+          .b7cBad { fill: #C6961A; }
+          .b7cL { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b7cLw { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b7cS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b7cSw { font: 600 11px Inter, sans-serif; fill: #E9E3FB; }
+          .b7cAr { stroke: #8B5CF6; stroke-width: 2.5; fill: none; marker-end: url(#b7cAh); }
+          .b7cYes { font: 700 12px Inter, sans-serif; fill: #4C1D95; }
+          .b7cNo { font: 700 12px Inter, sans-serif; fill: #C6961A; }
+          .b7cN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b7cAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <!-- retrieve -->
+        <rect class="b7cBox" x="30" y="120" width="150" height="56" rx="10"/>
+        <text class="b7cL" x="46" y="145">Retrieve top-k</text>
+        <text class="b7cS" x="46" y="164">best cosine = score</text>
+        <!-- decision diamond -->
+        <polygon class="b7cDia" points="330,148 410,100 490,148 410,196"/>
+        <text class="b7cLw" x="410" y="140" text-anchor="middle">score above</text>
+        <text class="b7cLw" x="410" y="158" text-anchor="middle">threshold?</text>
+        <!-- yes: answer -->
+        <rect class="b7cGood" x="600" y="40" width="250" height="86" rx="10"/>
+        <text class="b7cLw" x="616" y="66">Answer, grounded</text>
+        <text class="b7cSw" x="616" y="88">"Refunds take 5-7 business</text>
+        <text class="b7cSw" x="616" y="106">days. [C-refund]"</text>
+        <!-- no: refuse -->
+        <rect class="b7cBad" x="600" y="196" width="250" height="86" rx="10"/>
+        <text class="b7cLw" x="616" y="222">Refuse, honestly</text>
+        <text class="b7cSw" x="616" y="244">"I do not have that in</text>
+        <text class="b7cSw" x="616" y="262">our documents."</text>
+        <!-- arrows -->
+        <path class="b7cAr" d="M 180 148 L 325 148"/>
+        <path class="b7cAr" d="M 470 120 L 595 90"/>
+        <path class="b7cAr" d="M 470 176 L 595 220"/>
+        <text class="b7cYes" x="500" y="104">YES</text>
+        <text class="b7cNo" x="500" y="212">NO - do not guess</text>
+        <rect x="30" y="302" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b7cN" x="54" y="314">A weak best-match is a signal, not a failure. Refusing beats a confident wrong answer every time in support.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the refusal decision: answer with a citation, or refuse when nothing scores high enough</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Why refusal is a feature, not a failure<span class="mini">2 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>New builders treat "I do not know" as a bug to be minimized. In a support bot it is the opposite - it is the safety rail. The cost of a confident wrong answer ("yes, we offer a 90-day refund") is a broken promise, a support ticket, and lost trust. The cost of an honest refusal is one more click for the user. Refusal is cheaper, every time.</p>
+        <ul>
+          <li><strong>The threshold is your dial.</strong> If the best retrieval score is below some bar, the answer probably is not in your KB - so refuse. Tune the bar on real questions (that is session b9).</li>
+          <li><strong>Refusal protects the citation contract.</strong> A model that must cite a source cannot cite one that does not exist. So "no good source" naturally becomes "no answer".</li>
+          <li><strong>It is testable.</strong> You can write out-of-KB questions and assert the bot refuses. A bot that never refuses is a bot that hallucinates on the edges.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Anthropic Citations on a document block<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You can ground and cite with pure prompting, but Anthropic's Citations feature does it structurally: pass each retrieved chunk as a document content block with citations enabled, and the API returns the exact <code>cited_text</code> and its location for every claim.</p>
+        <div class="prompt-box good"><span class="label">Python · Citations enabled on a document block</span>import anthropic
+
+client = anthropic.Anthropic()
+
+resp = client.messages.create(
+    model="claude-sonnet-5",
+    max_tokens=1024,
+    messages=[{
+        "role": "user",
+        "content": [
+            {
+                "type": "document",
+                "source": {
+                    "type": "text",
+                    "media_type": "text/plain",
+                    "data": "Refunds are issued to the original payment "
+                            "method within 5 to 7 business days.",
+                },
+                "title": "C-refund",
+                "citations": {"enabled": True},
+            },
+            {"type": "text", "text": "How long does a refund take?"},
+        ],
+    }],
+)
+print(resp.content)  # answer blocks carry cited_text + location</div>
+        <div class="callout tip">
+          <strong>One chunk, one document block</strong>
+          Put each RAG chunk in its own plain-text document block. Plain text is split into sentence chunks and cited by character-index location; PDFs cite by page; custom content cites by block index. And <code>cited_text</code> does not count toward your output tokens - the quoting is effectively free, so there is no cost reason to skip citations.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Citation location types<span class="mini">3 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The location Anthropic returns with each citation depends on how you supplied the document. Matching the document type to how your users read the source makes the citations clickable in your UI.</p>
+        <table class="clean">
+          <thead><tr><th>Document type</th><th>How it is chunked</th><th>Location returned</th></tr></thead>
+          <tbody>
+            <tr><td>Plain text</td><td>Split into sentences</td><td>Character-index range (start, end)</td></tr>
+            <tr><td>PDF</td><td>By page</td><td>Page location</td></tr>
+            <tr><td>Custom content</td><td>Your own blocks</td><td>Block-index location</td></tr>
+          </tbody>
+        </table>
+        <p>For a RAG pipeline, plain-text document blocks - one per chunk - give the finest, sentence-level citations, which is usually what you want in a support answer. Custom content blocks are the move when you have already chunked deliberately and want the citation to point back to your exact chunk boundaries.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Prompt-only citations vs the Citations feature<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You can get citations two ways, and it is worth knowing when each earns its keep. Asking the model to write <code>[C-refund]</code> in its prose costs nothing to set up but is only as reliable as the prompt. Enabling the Citations feature returns the exact supporting sentence and its location as structured data you can render as a clickable link.</p>
+        <table class="clean">
+          <thead><tr><th>Approach</th><th>What you get</th><th>When to reach for it</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Prompt-only</strong></td><td>Source ids written into the answer text</td><td>Quick prototypes, logs, internal tools</td></tr>
+            <tr><td><strong>Citations feature</strong></td><td>Structured cited_text + location per claim</td><td>Customer-facing UIs where users click through to the source</td></tr>
+          </tbody>
+        </table>
+        <p>The two are not exclusive - a production support bot often uses the Citations feature for the clickable evidence and still keeps the grounding instruction in the system prompt, because the instruction is what stops the model answering off-context in the first place. Citations prove the answer; grounding causes it.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG / PLAYGROUND ============ -->
+  <section class="section" id="buildalong">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · covers the refusal threshold in the wild</span>
+      <h2>★ Feel the refuse case: Recall over Corpus C <span class="tag demo">★ 8 min · live playground</span></h2>
+    </div>
+    <p class="lede">This is Recall reading <strong>Corpus C</strong>, a company help-center knowledge base - the same shape of documents a support bot answers from. Ask a real support question and watch the right chunk rise. Then ask something the KB does not cover and watch the tool hit its refuse case - the exact decision your grounding prompt has to make.</p>
+    <div class="ragbox" data-corpus="C" data-k="3"
+         data-caption="Ask a support question. Then ask something NOT in the KB (e.g. 'what is your stock price?') and watch it hit the refuse case."></div>
+    <div class="callout tip">
+      <strong>Honesty note - what this playground really does</strong>
+      To run offline with zero network calls, this tool uses a <em>simplified</em> lexical embedding - term frequency over a small vocabulary with a synonym map - not a neural model. But the ranking mechanic is the real one: cosine similarity over vectors, exactly as production RAG does it. When nothing scores above zero, the tool shows an explicit refuse panel - that is a stand-in for the score threshold your real bot uses to decide "answer" versus "I do not have that in our documents."
+    </div>
+    <p>Ask "how do I reset my password?" or "how long for a refund?" and confirm the right KB chunk ranks first - that is the answer your grounding prompt would cite. Then ask "what is your stock price?" or "do you offer student discounts?" - things Corpus C simply does not contain - and watch the refuse panel appear. That panel is session b7 in one screen: when the best match is too weak, refuse instead of guessing.</p>
+  </section>
+
+  <!-- ============ EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · take it further</span>
+      <h2>Write Recall's grounding-and-refusal prompt <span class="tag demo">★ 12 min</span></h2>
+    </div>
+    <p class="lede">A grounding prompt is only trustworthy once you have tried to break it. Write Recall's system prompt, then test it against questions it should answer and questions it must refuse.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Draft the prompt.</strong> Write a system prompt that (1) restricts Recall to the provided context, (2) permits and specifies the exact refusal string, and (3) requires a source id citation after every claim. Reuse the Part 1 template as your skeleton.</p></div>
+      <div class="step"><p><strong>Three in-KB questions.</strong> Test against questions Corpus C answers: refund timing, password reset, shipping options. Confirm each answer is correct, stays inside the context, and carries the right citation like <code>[C-refund]</code>.</p></div>
+      <div class="step"><p><strong>Two out-of-KB questions.</strong> Test "what is your stock price?" and "do you sell gift cards?". Confirm Recall returns your exact refusal string and does not invent a plausible policy.</p></div>
+      <div class="step"><p><strong>Tune the tone.</strong> A bare refusal feels curt. Add one helpful line ("You might try contacting support Monday to Friday") - but only from context. Notice how the citation rule stops you from padding the refusal with invented specifics.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b7</strong>
+      Recall now answers strictly from the retrieved context, cites the source id for every claim, and refuses honestly when Corpus C does not hold the answer. It has a conscience. In b8 we wire the whole loop together - retrieve, augment, generate - and ship Recall v1 end to end with the Claude API.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b8 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Take your grounding prompt and run it (on paper or against a real key) over the five questions from the exercise. Log which answers cited correctly and whether both out-of-KB questions refused.</li>
+      <li>Convert one Corpus C chunk into an Anthropic document content block with <code>"citations": {"enabled": true}</code> and predict what <code>cited_text</code> and location you would get back for the question "how long for a refund?".</li>
+      <li>Write three more out-of-KB questions that are <em>close</em> to Corpus C topics (e.g. "can I get a refund after 45 days?" when the policy says 30). These near-misses are the hardest refusals and become evaluation cases in b9.</li>
+      <li>Read: Anthropic "Reduce hallucinations" (the allow-"I do not know" and quote-first sections) and the Anthropic Citations guide.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from Anthropic's official guidance on hallucination control and citations. This page covers the RAG-relevant core of both; the rest (full API reference, tool-use nuances) stays with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Reduce hallucinations</span><span class="note">Part 1-2 · allow "I do not know" · restrict to provided context · quote-first then answer · retract claims with no supporting quote</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Citations</span><span class="note">Part 2 · enable per document block · plain-text sentence + char-index location · PDF page · custom block-index · cited_text is free of output tokens</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Anthropic · Messages API (document blocks)</span><span class="note">Self-study · content-block shapes for documents; full end-to-end wiring lands in b8</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What is the single highest-leverage sentence in a RAG grounding prompt?</p>
+      <button class="qopt" type="button">A · "Be concise and professional in tone"</button>
+      <button class="qopt" type="button">B · "Answer using only the provided context; if the answer is not there, say you do not know"</button>
+      <button class="qopt" type="button">C · "Use your training knowledge to fill any gaps in the context"</button>
+      <p class="qwhy">Restricting the model to the provided context and permitting "I do not know" is what removes most hallucinations - it is Anthropic's core reduce-hallucinations move.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · When the best retrieved passage scores far below your threshold, the right behavior is to...</p>
+      <button class="qopt" type="button">A · Answer anyway using the closest passage, since some answer is better than none</button>
+      <button class="qopt" type="button">B · Answer from the model's training knowledge instead</button>
+      <button class="qopt" type="button">C · Refuse - "I do not have that in our documents" - rather than guess</button>
+      <p class="qwhy">A weak best-match signals the answer is not in the KB. Refusing beats a confident wrong answer; refusal is a feature, not a failure.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · With Anthropic Citations enabled on a plain-text document block, what do you get back and at what token cost?</p>
+      <button class="qopt" type="button">A · The exact cited_text with a character-index location, and cited_text does not count toward output tokens</button>
+      <button class="qopt" type="button">B · Only a document title, billed as extra output tokens</button>
+      <button class="qopt" type="button">C · A page number, and it doubles your output token cost</button>
+      <p class="qwhy">Plain text is chunked into sentences and cited by character-index location; the returned cited_text is free of output-token cost, so there is no cost reason to skip citations.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 7 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Grounding</b><span>Answer using ONLY the retrieved context. The model must not fall back on training knowledge.</span></div>
+      <div class="cheat-item"><b>The three moves</b><span>Restrict to context · allow "I do not know" · quote-first then answer. Retract any claim with no quote.</span></div>
+      <div class="cheat-item"><b>Cite the source id</b><span>Format each passage with its id, ask for a [bracket] citation per claim. The audit trail.</span></div>
+      <div class="cheat-item"><b>Refusal is a feature</b><span>Weak best-match → "I do not have that in our documents." Beats a confident wrong answer.</span></div>
+      <div class="cheat-item"><b>The threshold</b><span>Below the bar = probably not in the KB = refuse. Tune the bar on real questions (b9).</span></div>
+      <div class="cheat-item"><b>Anthropic Citations</b><span>Set "citations": {"enabled": true} on a document block. API returns cited_text + location.</span></div>
+      <div class="cheat-item"><b>Location types</b><span>Plain text → sentence + char-index · PDF → page · custom → block-index. One chunk per block.</span></div>
+      <div class="cheat-item"><b>Free quoting</b><span>cited_text does not count toward output tokens. No cost reason to skip citations.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 7 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b6-reranking.html">← Prev: Reranking</a> &nbsp;·&nbsp; <a href="b8-full-pipeline.html">Next: The full pipeline →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

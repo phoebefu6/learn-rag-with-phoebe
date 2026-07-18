@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 8 · The full pipeline - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 8 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 8 of 10</div>
+    <h1>The full pipeline: <span class="accent">retrieve, augment, generate, ship</span></h1>
+    <p class="sub">Seven sessions of parts. This is the session they assemble into. You will wire the whole runtime loop - embed the question, retrieve the top-k chunks from the store, build an augmented prompt that carries the context and the grounding instruction, call the Claude API, and stream back one cited, grounded answer. Reranking from b6 and refusal from b7 slot into this loop at named places. By the end, Recall v1 runs end to end over Corpus C. This is concept-level code, not a runnable repo - but every line is the real shape.</p>
+    <div class="chip-row">
+      <span class="chip level">🔴 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">Session 8 of 10</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:3">3-18 · Concepts</span>
+      <span class="a3" style="flex:5">18-40 · Build-along</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>Where every session lands</h2>
+    </div>
+    <p class="lede">RAG is three verbs: <strong>retrieve, augment, generate</strong>. Retrieve is b1 through b6 - embeddings, chunking, the store, metadata, hybrid search, reranking. Augment is the step we name today: taking the retrieved passages and folding them into a prompt with a grounding instruction. Generate is the Claude API call from b7's grounding rules. Today we write the loop that runs all three in sequence, over Corpus C, and streams one cited answer out the other end. That loop is Recall v1.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      The end-to-end Recall runtime: a function that takes a question, retrieves top-k from the store, augments a prompt with source-tagged context, calls the Claude Messages API, and streams a grounded, cited answer. You will see exactly where reranking and refusal plug in, and run it over five real support questions.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: THE WHOLE LOOP ============ -->
+  <section class="section" id="loop">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers the retrieve-augment-generate loop</span>
+      <h2>The whole loop, wired <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Here is the runtime path of a single question, start to finish. Nothing in it is new - you built every box in an earlier session. What is new is seeing them run as one function, where the output of retrieval becomes the input to augmentation, which becomes the prompt for generation.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="End-to-end RAG runtime: a question is embedded, top-k chunks are retrieved from the store, an augmented prompt is built with source ids, Claude generates, and a cited answer comes out">
+        <style>
+          .b8pBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b8pD1 { fill: #8B5CF6; }
+          .b8pD2 { fill: #6D28D9; }
+          .b8pD3 { fill: #4C1D95; }
+          .b8pL { font: 700 12.5px Inter, sans-serif; fill: #211B33; }
+          .b8pLw { font: 700 12.5px Inter, sans-serif; fill: #FFFFFF; }
+          .b8pS { font: 600 10.5px Inter, sans-serif; fill: #6E6685; }
+          .b8pSw { font: 600 10px Inter, sans-serif; fill: #E9E3FB; }
+          .b8pAr { stroke: #6D28D9; stroke-width: 2.5; fill: none; marker-end: url(#b8pAh); }
+          .b8pN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+          .b8pCite { font: 700 11px Inter, sans-serif; fill: #FFD873; }
+        </style>
+        <defs>
+          <marker id="b8pAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#6D28D9"/></marker>
+        </defs>
+        <!-- question -->
+        <rect class="b8pBox" x="20" y="90" width="110" height="60" rx="10"/>
+        <text class="b8pL" x="34" y="115">Question</text>
+        <text class="b8pS" x="34" y="134">"refund time?"</text>
+        <!-- embed -->
+        <rect class="b8pD1" x="160" y="90" width="110" height="60" rx="10"/>
+        <text class="b8pLw" x="174" y="115">Embed</text>
+        <text class="b8pSw" x="174" y="134">query → vector</text>
+        <!-- retrieve -->
+        <rect class="b8pD2" x="300" y="90" width="120" height="60" rx="10"/>
+        <text class="b8pLw" x="314" y="115">Retrieve top-k</text>
+        <text class="b8pSw" x="314" y="134">store.query()</text>
+        <!-- augment -->
+        <rect class="b8pD2" x="450" y="90" width="130" height="60" rx="10"/>
+        <text class="b8pLw" x="464" y="112">Augment prompt</text>
+        <text class="b8pSw" x="464" y="130">context + question</text>
+        <text class="b8pSw" x="464" y="145">+ grounding rule</text>
+        <!-- generate -->
+        <rect class="b8pD3" x="610" y="90" width="120" height="60" rx="10"/>
+        <text class="b8pLw" x="624" y="115">Claude generates</text>
+        <text class="b8pSw" x="624" y="134">messages.create</text>
+        <!-- answer -->
+        <rect class="b8pBox" x="760" y="90" width="100" height="60" rx="10"/>
+        <text class="b8pL" x="774" y="112">Cited</text>
+        <text class="b8pL" x="774" y="128">answer</text>
+        <text class="b8pCite" x="774" y="145" style="fill:#C6961A">[C-refund]</text>
+        <!-- arrows -->
+        <path class="b8pAr" d="M 130 120 L 155 120"/>
+        <path class="b8pAr" d="M 270 120 L 295 120"/>
+        <path class="b8pAr" d="M 420 120 L 445 120"/>
+        <path class="b8pAr" d="M 580 120 L 605 120"/>
+        <path class="b8pAr" d="M 730 120 L 755 120"/>
+        <rect x="20" y="212" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b8pN" x="44" y="224">One function, five steps. Rerank (b6) sits after retrieve; refuse (b7) sits between retrieve and augment when the top score is too weak.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the end-to-end RAG runtime: embed, retrieve, augment, generate, cite</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>The augmentation step, up close<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Augmentation is the step people skim past, but it is where grounding lives. It takes the retrieved chunks and formats them into the prompt so the model can both use them and cite them. Two habits matter:</p>
+        <ul>
+          <li><strong>Tag each passage with its source id.</strong> Prefix every chunk with a marker like <code>[C-refund]</code> so the model can point back to it. No source markers in the prompt means no citations in the answer.</li>
+          <li><strong>Keep the grounding instruction in the system prompt.</strong> The augmented prompt is the sum of three things: the system grounding rule (from b7), the retrieved passages tagged with ids, and the user's question. Same three ingredients, every request.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Wiring the loop in Python<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Here is the whole loop as one function. Embed the query, ask the store for top-k, format the context with source ids, and call the Claude Messages API with the grounding system prompt. This is concept-level - your <code>embed</code> and <code>collection</code> come from earlier sessions - but the shape is exactly production.</p>
+        <div class="prompt-box good"><span class="label">Python · retrieve → augment → generate</span>import anthropic
+
+client = anthropic.Anthropic()
+
+SYSTEM = ("You are Recall. Answer using ONLY the context passages. "
+          "If the answer is not present, say you do not know. "
+          "Cite the source id in [brackets] after each claim.")
+
+def answer(question, collection, embed):
+    # 1. retrieve: embed the query, ask the store for top-k
+    q_vec = embed([question])[0]
+    hits = collection.query(query_embeddings=[q_vec], n_results=3)
+    docs = hits["documents"][0]
+    ids  = hits["ids"][0]
+
+    # 2. augment: format each passage with its source id
+    context = "\n\n".join(f"[{i}] {d}" for i, d in zip(ids, docs))
+    user = f"Context:\n{context}\n\nQuestion: {question}"
+
+    # 3. generate: call the Claude Messages API
+    resp = client.messages.create(
+        model="claude-sonnet-5",
+        max_tokens=1024,
+        system=SYSTEM,
+        messages=[{"role": "user", "content": user}],
+    )
+    return resp.content[0].text
+
+print(answer("how long does a refund take?", collection, embed))</div>
+        <div class="callout tip">
+          <strong>Model ids you can pass today</strong>
+          <code>model="claude-sonnet-5"</code> is the balanced default for a support bot. Reach for <code>claude-opus-4-8</code> when answers need the most reasoning, or <code>claude-haiku-4-5-20251001</code> when latency and cost matter most. The rest of the call is identical across all three - the pipeline does not change, only the model string.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Why each chunk gets its own document block<span class="mini">3 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The Part 1 code stuffs the tagged context into one text block, which is the simplest wiring. To get structured, sentence-level citations back from the API (b7), pass each retrieved chunk as its own document content block with citations enabled instead of concatenating them into one string.</p>
+        <div class="prompt-box good"><span class="label">Python · one document block per retrieved chunk</span>def to_documents(hits):
+    docs = hits["documents"][0]
+    ids  = hits["ids"][0]
+    return [
+        {
+            "type": "document",
+            "source": {"type": "text", "media_type": "text/plain", "data": d},
+            "title": i,
+            "citations": {"enabled": True},
+        }
+        for i, d in zip(ids, docs)
+    ]
+
+content = to_documents(hits) + [{"type": "text", "text": question}]
+resp = client.messages.create(
+    model="claude-sonnet-5", max_tokens=1024, system=SYSTEM,
+    messages=[{"role": "user", "content": content}],
+)</div>
+        <p>One chunk per plain-text document block gives you sentence-level citations with character-index locations, and the returned <code>cited_text</code> is free of output-token cost. This is the difference between "the model mentioned a source" and "the API told me exactly which sentence backs this claim".</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: STREAMING + ASSEMBLED RECALL ============ -->
+  <section class="section" id="streaming">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers streaming + the assembled system</span>
+      <h2>Streaming, and the assembled Recall <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">A support answer that appears all at once after a three-second pause feels broken; the same answer streamed token by token feels instant. Streaming does not change the pipeline - it changes how the last step delivers. And once you stream, you can attach the citations to the text as it lands, so the answer and its evidence arrive together.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Streaming: tokens arrive one after another to form the answer, with citations attached to the claims they support">
+        <style>
+          .b8sBox { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b8sTok { fill: #8B5CF6; }
+          .b8sTok2 { fill: #6D28D9; }
+          .b8sL { font: 700 12.5px Inter, sans-serif; fill: #211B33; }
+          .b8sLw { font: 700 12px Inter, sans-serif; fill: #FFFFFF; }
+          .b8sS { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b8sAr { stroke: #8B5CF6; stroke-width: 2.5; fill: none; marker-end: url(#b8sAh); }
+          .b8sCite { font: 700 12px Inter, sans-serif; fill: #C6961A; }
+          .b8sN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b8sAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#8B5CF6"/></marker>
+        </defs>
+        <!-- claude -->
+        <rect class="b8sTok2" x="30" y="90" width="120" height="56" rx="10"/>
+        <text class="b8sLw" x="90" y="115" text-anchor="middle">Claude</text>
+        <text class="b8sLw" x="90" y="132" text-anchor="middle" style="font-weight:600;font-size:10px;fill:#E9E3FB">messages.stream</text>
+        <!-- tokens -->
+        <rect class="b8sTok" x="200" y="96" width="70" height="44" rx="8"/>
+        <text class="b8sLw" x="235" y="123" text-anchor="middle">Refunds</text>
+        <rect class="b8sTok" x="285" y="96" width="60" height="44" rx="8"/>
+        <text class="b8sLw" x="315" y="123" text-anchor="middle">take</text>
+        <rect class="b8sTok" x="360" y="96" width="90" height="44" rx="8"/>
+        <text class="b8sLw" x="405" y="123" text-anchor="middle">5-7 days</text>
+        <text class="b8sS" x="200" y="168">tokens stream in, left to right</text>
+        <!-- answer with citation -->
+        <rect class="b8sBox" x="560" y="80" width="290" height="80" rx="10"/>
+        <text class="b8sL" x="576" y="108">"Refunds take 5-7</text>
+        <text class="b8sL" x="576" y="128">business days."</text>
+        <text class="b8sCite" x="576" y="150">[C-refund] ← citation attached</text>
+        <!-- arrows -->
+        <path class="b8sAr" d="M 150 118 L 195 118"/>
+        <path class="b8sAr" d="M 450 118 L 555 118"/>
+        <rect x="30" y="222" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b8sN" x="54" y="234">Same answer, better UX. Citations attach to the claims as the text lands, so evidence arrives with the words.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - streaming delivers the answer token by token, with citations attached to their claims</figcaption>
+    </figure>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Streaming the answer with the Messages API<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Swap <code>messages.create</code> for <code>messages.stream</code> and iterate the text as it arrives. The retrieve and augment steps are unchanged - only the delivery of the generate step differs.</p>
+        <div class="prompt-box good"><span class="label">Python · stream a grounded answer with citations enabled</span>content = to_documents(hits) + [{"type": "text", "text": question}]
+
+with client.messages.stream(
+    model="claude-sonnet-5",
+    max_tokens=1024,
+    system=SYSTEM,
+    messages=[{"role": "user", "content": content}],
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)   # tokens arrive live
+
+    final = stream.get_final_message()
+    # cited_text + location travel with the final message,
+    # free of output-token cost</div>
+        <div class="callout tip">
+          <strong>Streaming UX, without the pipeline changing</strong>
+          The whole retrieve-augment-generate loop is identical whether you stream or not. Streaming is purely a delivery choice at the generate step: it drops perceived latency to near zero because the first token appears immediately, while the rest write themselves out as the user reads. Attach each citation to its claim as the text lands and the answer never appears "unsourced" even mid-stream.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Where reranking and refusal slot in<span class="mini">3 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The loop from Part 1 is the spine. The last two sessions plug into named joints on it - you do not rebuild anything, you insert a step.</p>
+        <table class="clean">
+          <thead><tr><th>Step from b6/b7</th><th>Where it slots into the loop</th><th>What it changes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Reranking (b6)</strong></td><td>Right after retrieve, before augment</td><td>Reorders the top-k so the most relevant chunk leads the context</td></tr>
+            <tr><td><strong>Refusal (b7)</strong></td><td>Between retrieve and augment</td><td>If the best score is below threshold, short-circuit and refuse - never reach generate</td></tr>
+            <tr><td><strong>Grounding (b7)</strong></td><td>Inside augment (the system prompt)</td><td>Constrains generate to the context and requires citations</td></tr>
+          </tbody>
+        </table>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Refuse before you spend a token.</strong> A team (anonymized) put the refusal check after the generate call, so every out-of-scope question still paid for a full Claude response before being thrown away. Moving the threshold check to right after retrieve - refuse before augment - cut their wasted API spend on junk questions to zero. The order of the joints matters, not just their presence.</p>
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Hand-wired loop vs a framework<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Frameworks like LangChain give you the retrieve-augment-generate loop as a few lines of chain configuration. We hand-wired it here on purpose - once you have written the loop yourself, the framework becomes a convenience rather than a black box.</p>
+        <table class="clean">
+          <thead><tr><th></th><th>Hand-wired</th><th>Framework (e.g. LangChain)</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Control</strong></td><td>Total - you see every step</td><td>Abstracted behind chain objects</td></tr>
+            <tr><td><strong>Speed to first demo</strong></td><td>Slower</td><td>Faster</td></tr>
+            <tr><td><strong>Debugging</strong></td><td>Straightforward - it is your code</td><td>Depends on the framework internals</td></tr>
+          </tbody>
+        </table>
+        <p>The advice for a first production system: hand-wire it, so you understand exactly where reranking, refusal, and citations live. Reach for a framework later, when the loop is boring and you want the boilerplate handled. Either way the three verbs are identical underneath - the framework is just sugar over retrieve, augment, generate.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG / PLAYGROUND ============ -->
+  <section class="section" id="buildalong">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · covers the retrieve step feeding the loop</span>
+      <h2>★ See the retrieve step that feeds generate <span class="tag demo">★ 6 min · live playground</span></h2>
+    </div>
+    <p class="lede">Before you wire the whole loop, watch its first real step in isolation. This is Recall's retrieve over <strong>Corpus C</strong> - the exact chunks that would become the augmented prompt's context. Whatever ranks in the top-k here is what your <code>build_prompt</code> would tag with source ids and hand to Claude.</p>
+    <div class="ragbox" data-corpus="C" data-k="3"
+         data-caption="Ask a support question. The top-k chunks here are exactly what would be tagged with source ids and stuffed into the augmented prompt for Claude."></div>
+    <div class="callout tip">
+      <strong>Honesty note - what this playground really does</strong>
+      This tool runs a <em>simplified</em> lexical embedding offline - term frequency over a small vocabulary with a synonym map, not a neural model. But the ranking mechanic is the real one: cosine similarity over vectors, exactly as production retrieval does it. The end-to-end pipeline on this page is concept-level code, not a runnable repo - this playground shows you only the retrieve step that feeds it, so you can see what the augmentation step actually receives.
+    </div>
+    <p>Ask "how do I cancel my subscription?" and note the ranked chunks. Those top-k results - <code>[C-subscription]</code> and its neighbors - are precisely the context your loop would format with source ids and pass to <code>messages.create</code>. Seeing retrieve in isolation makes the augment step concrete: the prompt is just these chunks, tagged, plus the grounding rule, plus the question.</p>
+  </section>
+
+  <!-- ============ EXERCISE ============ -->
+  <section class="section" id="exercise">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · take it further</span>
+      <h2>Assemble the full Recall script <span class="tag demo">★ 15 min</span></h2>
+    </div>
+    <p class="lede">Time to put the whole thing on one page. Assemble the retrieve-augment-generate loop over Corpus C, then run five real support questions through it and read the answers critically.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Assemble the loop.</strong> Combine the Part 1 <code>answer()</code> function with your b7 grounding system prompt. Use Corpus C's eight chunks as the collection. Keep it one file - retrieve, augment, generate, in order.</p></div>
+      <div class="step"><p><strong>Run five questions.</strong> Refund timing, password reset, shipping options, subscription cancel, and account deletion. Confirm each answer is grounded in the right chunk and carries a citation like <code>[C-reset]</code>.</p></div>
+      <div class="step"><p><strong>Add the streaming variant.</strong> Swap in <code>messages.stream</code> and watch the same answer arrive token by token. Note the pipeline code above the call did not change at all.</p></div>
+      <div class="step"><p><strong>Slot in refusal.</strong> Add a threshold check right after retrieve: if the best score is too low, return the refusal string and never call Claude. Test it with "what is your stock price?" and confirm it short-circuits before generate.</p></div>
+    </div>
+    <div class="callout win">
+      <strong>★ Recall's status after b8</strong>
+      Recall v1 runs end to end: a question goes in, top-k chunks come out of the store, an augmented prompt carries them to Claude with source ids and a grounding rule, and a cited, streamed answer comes back - with refusal guarding the edges. It is a working support bot. In b9 we stop trusting it by feel and start measuring it - retrieval and answer quality, on a real evaluation set.
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b9 <span class="tag exercise">◐ 45 min total</span></h2>
+    </div>
+    <ul>
+      <li>Write out the full <code>answer()</code> loop from memory - embed, query, augment with source ids, <code>messages.create</code> - without looking. Gaps you hit are the parts to reread.</li>
+      <li>Convert the loop to the document-block form (one plain-text block per chunk, citations enabled) and predict the <code>cited_text</code> you would get back for "how do I delete my account?".</li>
+      <li>Add the refusal short-circuit after retrieve and list three questions it should catch before ever reaching Claude.</li>
+      <li>Read: the LangChain RAG pipeline tutorial (for the retrieve-augment-generate framing) and the Anthropic Citations + Messages API pages for the exact call shapes.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from Anthropic's Messages API and Citations docs, with LangChain for the pipeline framing. Honest note: the code on this page is concept-level - correct in shape and API surface, but not a cloned, runnable repo. Wire it against your own store and key.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Messages API</span><span class="note">Part 1-2 · client.messages.create / .stream · model, max_tokens, system, content blocks · claude-sonnet-5 / claude-opus-4-8 / claude-haiku-4-5</span></div>
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Anthropic · Citations</span><span class="note">Part 1-2 · document blocks with "citations": {"enabled": true} · cited_text + location free of output tokens</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">LangChain · RAG pipeline (retrieve → augment → generate)</span><span class="note">Part 1 · the three-verb framing and loop structure; we hand-wire it rather than use the abstractions</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · What are the three verbs of the RAG runtime loop, in order?</p>
+      <button class="qopt" type="button">A · Embed, store, index</button>
+      <button class="qopt" type="button">B · Retrieve, augment, generate</button>
+      <button class="qopt" type="button">C · Chunk, rerank, refuse</button>
+      <p class="qwhy">Retrieve (top-k from the store), augment (build the prompt with source-tagged context and the grounding rule), generate (call the Claude API). That loop is the whole pipeline.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · What does the augmentation step actually do?</p>
+      <button class="qopt" type="button">A · It embeds the query into a vector</button>
+      <button class="qopt" type="button">B · It stores the answer back into the vector database</button>
+      <button class="qopt" type="button">C · It folds the retrieved passages - tagged with source ids - plus the question into a prompt with the grounding instruction</button>
+      <p class="qwhy">Augment = system grounding rule + retrieved passages each tagged with a source id + the user question. The source tags are what make citations possible.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · Switching from messages.create to messages.stream changes...</p>
+      <button class="qopt" type="button">A · Only how the generated answer is delivered - the retrieve and augment steps are identical</button>
+      <button class="qopt" type="button">B · The retrieval algorithm used against the store</button>
+      <button class="qopt" type="button">C · Which embedding model produces the query vector</button>
+      <p class="qwhy">Streaming is purely a delivery choice at the generate step. The pipeline above the call is unchanged; tokens just arrive live, dropping perceived latency.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 8 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>The three verbs</b><span>Retrieve → augment → generate. The whole RAG runtime is these three steps in order.</span></div>
+      <div class="cheat-item"><b>Retrieve</b><span>Embed the query, collection.query for top-k. This is b1-b6 running as one call.</span></div>
+      <div class="cheat-item"><b>Augment</b><span>system grounding rule + passages tagged with source ids + the question. The augmented prompt.</span></div>
+      <div class="cheat-item"><b>Generate</b><span>client.messages.create(model, max_tokens, system, messages). Grounded, cited answer out.</span></div>
+      <div class="cheat-item"><b>Model ids</b><span>claude-sonnet-5 (balanced) · claude-opus-4-8 (deepest) · claude-haiku-4-5-20251001 (fastest).</span></div>
+      <div class="cheat-item"><b>Citations</b><span>One plain-text document block per chunk, "citations": {"enabled": true}. cited_text is free.</span></div>
+      <div class="cheat-item"><b>Streaming</b><span>client.messages.stream(...); iterate text_stream. Same pipeline, tokens arrive live.</span></div>
+      <div class="cheat-item"><b>The joints</b><span>Rerank (b6) after retrieve; refuse (b7) between retrieve and augment - short-circuit before generate.</span></div>
+    </div>
+  </section>
+
+  <footer class="pagefoot">
+    <span>Builder session 8 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b7-grounding-citations.html">← Prev: Grounding &amp; citations</a> &nbsp;·&nbsp; <a href="b9-evaluation.html">Next: Evaluation →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>

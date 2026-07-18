@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builder session 2 · Chunking strategies - learn RAG with phoebe</title>
+<link rel="stylesheet" href="../assets/style.css?v=1">
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="wrap">
+    <span class="crumb"><a href="../index.html">learn-rag-with-phoebe</a> / Builder session 2 of 10</span>
+    <button class="btn" id="toggle-all" type="button">Expand all</button>
+    <button class="btn primary" id="zoom-toggle" type="button">Projector zoom: off</button>
+  </div>
+</div>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Learn RAG with Phoebe · Builder track · Session 2 of 10</div>
+    <h1>Chunking strategies: <span class="accent">cutting documents so retrieval works</span></h1>
+    <p class="sub">In b1 Recall learned to turn text into vectors and rank by meaning. But real documents are long - a 40-page policy, a wiki with fifty pages, a folder of notes. You cannot embed all of it as one blob and hope. The single choice that decides whether retrieval works is <em>how you cut the document into pieces</em>. Too big and the meaning blurs; too small and the context is gone. This session is the practitioner's guide to chunking: the strategies that exist, the two levers you actually tune, and the contextual trick that quietly fixes most retrieval misses. Recall indexes its first real corpus today - the MD's notes.</p>
+    <div class="chip-row">
+      <span class="chip level">🟢 Builder track</span>
+      <span class="chip audience">Practitioners · some Python</span>
+      <span class="chip audience">Live playground included</span>
+      <span class="chip time">45 min</span>
+    </div>
+    <div class="agenda">
+      <span class="a1" style="flex:1">0-3 · Welcome</span>
+      <span class="a2" style="flex:3">3-20 · Concepts</span>
+      <span class="a3" style="flex:5">20-40 · Build-along</span>
+      <span class="a4" style="flex:1">40-45 · Q&amp;A</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ INTRO ============ -->
+  <section class="section" id="intro">
+    <div class="section-kicker">
+      <span class="klabel">Part 0</span>
+      <h2>The most under-rated decision in RAG</h2>
+    </div>
+    <p class="lede">Teams spend weeks choosing an embedding model and picking a vector database, then wonder why retrieval is mediocre. Nine times out of ten the real culprit is chunking. Retrieval can only ever return a chunk you created - so if your chunks are shaped wrong, no model and no database can save you. Good news: chunking is cheap to change and you can feel the difference in minutes. Today we make Recall's chunks deliberate.</p>
+    <div class="legend">
+      <span class="pill solid">Live - presented in session</span>
+      <span class="pill light">Self-study - full depth after class</span>
+      <span class="pill peach">★ Try it now</span>
+      <span class="pill inkpill">Sources covered at the end</span>
+    </div>
+    <div class="callout win">
+      <strong>★ What you build today</strong>
+      A working mental model of six chunking strategies and when to reach for each, the Python to split a real document with the recommended starting point, and hands-on time watching a clean chunk retrieve cleanly in Recall's Corpus A. You leave able to look at any document and know how you would cut it.
+    </div>
+  </section>
+
+  <!-- ============ PART 1: WHY CHUNK ============ -->
+  <section class="section" id="why-chunk">
+    <div class="section-kicker">
+      <span class="klabel">Part 1 · covers why documents get split before embedding</span>
+      <h2>Why chunk at all <span class="tag concept">8 min live</span></h2>
+    </div>
+    <p class="lede">Chunking is the step between "here is a document" and "here are vectors in a database". You break the document into pieces, embed each piece separately, and store each as its own retrievable unit. When a query comes in, you rank the <em>chunks</em>, not the documents. So the chunk is the atom of retrieval - the smallest thing the system can hand back.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A long document is split into several chunks, each chunk is embedded into its own vector, and each vector is retrieved individually by a query">
+        <style>
+          .b2wDoc { fill: #F5F3FF; stroke: #C7C0DA; stroke-width: 1.5; }
+          .b2wChunk { fill: #EDE7FB; stroke: #8B5CF6; stroke-width: 1.5; }
+          .b2wVec { fill: #6D28D9; }
+          .b2wT { font: 600 12.5px Inter, sans-serif; fill: #211B33; }
+          .b2wG { font: 600 12px Inter, sans-serif; fill: #6E6685; }
+          .b2wArr { stroke: #C7C0DA; stroke-width: 2; marker-end: url(#b2wAh); fill: none; }
+          .b2wN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <defs>
+          <marker id="b2wAh" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6" fill="#C7C0DA"/></marker>
+        </defs>
+        <rect class="b2wDoc" x="30" y="70" width="150" height="200" rx="6"/>
+        <text class="b2wG" x="105" y="60" text-anchor="middle">one long doc</text>
+        <line x1="45" y1="100" x2="165" y2="100" stroke="#C7C0DA"/>
+        <line x1="45" y1="120" x2="165" y2="120" stroke="#C7C0DA"/>
+        <line x1="45" y1="140" x2="165" y2="140" stroke="#C7C0DA"/>
+        <line x1="45" y1="200" x2="165" y2="200" stroke="#C7C0DA"/>
+        <line x1="45" y1="220" x2="165" y2="220" stroke="#C7C0DA"/>
+        <path class="b2wArr" d="M 185 170 L 235 170"/>
+        <text class="b2wG" x="300" y="60" text-anchor="middle">split into chunks</text>
+        <rect class="b2wChunk" x="245" y="80" width="110" height="50" rx="5"/><text class="b2wT" x="300" y="110" text-anchor="middle">chunk 1</text>
+        <rect class="b2wChunk" x="245" y="145" width="110" height="50" rx="5"/><text class="b2wT" x="300" y="175" text-anchor="middle">chunk 2</text>
+        <rect class="b2wChunk" x="245" y="210" width="110" height="50" rx="5"/><text class="b2wT" x="300" y="240" text-anchor="middle">chunk 3</text>
+        <path class="b2wArr" d="M 360 105 L 410 105"/>
+        <path class="b2wArr" d="M 360 170 L 410 170"/>
+        <path class="b2wArr" d="M 360 235 L 410 235"/>
+        <text class="b2wG" x="470" y="60" text-anchor="middle">embed each</text>
+        <circle class="b2wVec" cx="470" cy="105" r="14"/><text class="b2wT" x="500" y="110" fill="#6E6685">→ vector</text>
+        <circle class="b2wVec" cx="470" cy="170" r="14"/><text class="b2wT" x="500" y="175" fill="#6E6685">→ vector</text>
+        <circle class="b2wVec" cx="470" cy="235" r="14"/><text class="b2wT" x="500" y="240" fill="#6E6685">→ vector</text>
+        <path class="b2wArr" d="M 590 170 L 640 170"/>
+        <rect x="645" y="130" width="200" height="80" rx="8" fill="#4C1D95"/>
+        <text x="745" y="165" text-anchor="middle" font="600 13px Inter" fill="#FFFFFF" style="font:700 13px Inter,sans-serif">query ranks each</text>
+        <text x="745" y="188" text-anchor="middle" fill="#A78BFA" style="font:600 12px Inter,sans-serif">chunk individually</text>
+        <rect x="30" y="300" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b2wN" x="54" y="312">The chunk is the atom of retrieval. The system can only ever return a chunk you made.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - a document becomes chunks, each embedded and retrieved on its own</figcaption>
+    </figure>
+
+    <details class="card" open>
+      <summary><span class="mode live">Live</span>Three reasons you cannot skip chunking<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Chunking is not a nicety - it is forced on you by how embeddings and language models work. Three pressures push in the same direction:</p>
+        <ul>
+          <li><strong>Embedding models have a size limit.</strong> Every embedding model has a maximum input length (a context window). Feed it more text than that and it truncates or errors. A long document simply will not fit as one call.</li>
+          <li><strong>One vector per whole document loses detail.</strong> Squeeze a 20-page report into a single vector and you get an average of everything it says - a smear. The specific sentence that answers the question is drowned out by the other nineteen pages.</li>
+          <li><strong>Retrieval returns the chunk, not the document.</strong> You want to hand the language model the precise passage that answers the question, not the entire file. Small, focused chunks make precise retrieval possible and keep the prompt cheap.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The Goldilocks problem: too big vs too small<span class="mini">4 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Chunking is a balancing act, and both ends fail in their own way:</p>
+        <ul>
+          <li><strong>Too big dilutes meaning.</strong> A giant chunk covers many topics, so its single vector points at the average of all of them. It matches lots of queries weakly and none of them strongly - and it stuffs your prompt with irrelevant text.</li>
+          <li><strong>Too small loses context.</strong> A one-line chunk may be perfectly on-topic but missing the surrounding sentences that make it usable. "It was rejected" retrieves nothing useful without knowing what "it" is.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>The paragraph that lost its subject.</strong> A team (anonymized) chunked a policy handbook by sentence for maximum precision. Retrieval kept surfacing "This must be approved by two directors." - true, but useless, because the sentence naming <em>what</em> must be approved lived in the previous chunk. Widening to paragraph-level chunks with overlap fixed it instantly.</p>
+        </div>
+        <p>The craft of chunking is finding the size where each piece is focused enough to rank sharply but complete enough to stand on its own. That is what the strategies in Part 2 are all reaching for.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>What makes a good chunk<span class="mini">3 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Before you learn the strategies, it helps to know what they are all aiming at. A good chunk has three properties you can check by eye:</p>
+        <ul>
+          <li><strong>One idea.</strong> A reader should be able to say what the chunk is about in a single phrase. If it takes two, the chunk is probably two chunks.</li>
+          <li><strong>Self-contained.</strong> It makes sense on its own, without the sentence before or after it. Pronouns with no antecedent ("it", "this", "they") are the warning sign of a chunk that was cut too tight.</li>
+          <li><strong>Retrievable in isolation.</strong> If you imagine the question this chunk answers, the chunk should contain enough of the question's language or meaning to be found. A chunk nobody can retrieve is dead weight in your store.</li>
+        </ul>
+        <p>Notice that these pull against each other - "one idea" wants small, "self-contained" wants big. Every strategy in Part 2 is a different way to resolve that tension, and the contextual trick at the end is a way to cheat it.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ PART 2: THE STRATEGIES ============ -->
+  <section class="section" id="strategies">
+    <div class="section-kicker">
+      <span class="klabel">Part 2 · covers the six chunking strategies + the two levers</span>
+      <h2>The strategies <span class="tag concept">9 min live</span></h2>
+    </div>
+    <p class="lede">There is a ladder of chunking strategies, from dead-simple to clever. You climb it only when the simple rung stops working - most systems live happily near the bottom. Here is the ladder, cheapest and most common first.</p>
+
+    <figure class="zoomable">
+      <svg viewBox="0 0 880 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A ladder of chunking strategies from simplest at the bottom to most sophisticated at the top: fixed-size, recursive, sentence-window, parent-document, semantic, contextual">
+        <style>
+          .b2sRung { stroke: #C7C0DA; stroke-width: 2; }
+          .b2sBar { rx: 6; }
+          .b2sT { font: 700 13px Inter, sans-serif; fill: #FFFFFF; }
+          .b2sTi { font: 700 13px Inter, sans-serif; fill: #211B33; }
+          .b2sG { font: 600 11.5px Inter, sans-serif; fill: #6E6685; }
+          .b2sAx { font: 600 12px Inter, sans-serif; fill: #6E6685; }
+          .b2sN { font: 600 14px Inter, sans-serif; fill: #3A2A00; }
+        </style>
+        <line class="b2sRung" x1="70" y1="40" x2="70" y2="300"/>
+        <text class="b2sAx" x="60" y="36" text-anchor="end" transform="rotate(-90 60 36)">more sophisticated ↑</text>
+        <rect class="b2sBar" x="90" y="270" width="260" height="30" fill="#4C1D95"/><text class="b2sT" x="100" y="290">Fixed-size</text><text class="b2sG" x="360" y="290">simplest · start here</text>
+        <rect class="b2sBar" x="90" y="230" width="300" height="30" fill="#5B21B6"/><text class="b2sT" x="100" y="250">Recursive (character)</text><text class="b2sG" x="400" y="250">respects structure</text>
+        <rect class="b2sBar" x="90" y="190" width="340" height="30" fill="#6D28D9"/><text class="b2sT" x="100" y="210">Sentence-window</text><text class="b2sG" x="440" y="210">retrieve one, expand</text>
+        <rect class="b2sBar" x="90" y="150" width="380" height="30" fill="#7C3AED"/><text class="b2sT" x="100" y="170">Parent-document</text><text class="b2sG" x="480" y="170">small child, big parent</text>
+        <rect class="b2sBar" x="90" y="110" width="420" height="30" fill="#8B5CF6"/><text class="b2sT" x="100" y="130">Semantic</text><text class="b2sG" x="520" y="130">split on meaning shifts</text>
+        <rect class="b2sBar" x="90" y="70" width="460" height="30" fill="#A78BFA"/><text class="b2sTi" x="100" y="90">Contextual</text><text class="b2sG" x="560" y="90">prepend context</text>
+        <rect x="70" y="330" width="14" height="14" rx="3" fill="#C6961A"/>
+        <text class="b2sN" x="94" y="342">Climb only when the rung below stops working. Most systems ship on fixed-size or recursive.</text>
+      </svg>
+      <figcaption>🔍 Click to zoom - the chunking ladder, simplest at the bottom</figcaption>
+    </figure>
+
+    <table class="clean">
+      <thead>
+        <tr><th>Strategy</th><th>How it works</th><th>When to use</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Fixed-size</strong></td><td>Cut every N characters or tokens, usually with a little overlap. No awareness of structure.</td><td>Your default and starting point. Fast, predictable, good enough for most corpora.</td></tr>
+        <tr><td><strong>Recursive (character)</strong></td><td>Try to split on big separators first (paragraphs), fall back to smaller ones (lines, spaces) to keep pieces near the target size without breaking mid-thought.</td><td>When documents have natural structure - prose, docs, articles. The practical everyday choice.</td></tr>
+        <tr><td><strong>Semantic</strong></td><td>Embed sentences and cut where the meaning shifts, so each chunk is one coherent topic.</td><td>When topics change unpredictably within a document and fixed sizes cut across ideas.</td></tr>
+        <tr><td><strong>Sentence-window</strong></td><td>Index single sentences for precise matching, then expand to neighboring sentences before sending to the LLM.</td><td>When you need pinpoint retrieval but the LLM still needs surrounding context to answer.</td></tr>
+        <tr><td><strong>Parent-document</strong></td><td>Index small child chunks for precise retrieval, but feed the larger parent chunk to the LLM once a child matches.</td><td>When precise matching and rich context pull in opposite directions - a common, powerful pattern.</td></tr>
+        <tr><td><strong>Contextual</strong></td><td>Prepend a short generated context (what section, what document) to each chunk before embedding.</td><td>When chunks lose meaning out of context - Anthropic's fix for a large class of retrieval misses.</td></tr>
+      </tbody>
+    </table>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Recursive splitting in Python, the everyday default<span class="mini">4 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>The workhorse in practice is LangChain's <code>RecursiveCharacterTextSplitter</code>. It tries a list of separators in order - <code>["\n\n", "\n", " ", ""]</code> - splitting on paragraph breaks first, then line breaks, then spaces, then raw characters, so it keeps pieces near your target size without cutting across a paragraph if it can help it.</p>
+        <div class="prompt-box good"><span class="label">Python · split a document with the recommended defaults</span>from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,        # target size per chunk, in characters
+    chunk_overlap=200,      # characters shared between neighbors
+    separators=["\n\n", "\n", " ", ""],  # tried in order
+)
+
+with open("md_notes.txt") as f:
+    text = f.read()
+
+chunks = splitter.split_text(text)
+print(f"{len(chunks)} chunks")
+for i, c in enumerate(chunks[:3]):
+    print(f"--- chunk {i} ({len(c)} chars) ---")
+    print(c)</div>
+        <p>Those numbers - <code>chunk_size=1000</code>, <code>chunk_overlap=200</code> - are LangChain's defaults and a perfectly good place to start. Change them only once you have a reason, which brings us to the two levers.</p>
+        <div class="callout tip">
+          <strong>Why recursive beats plain fixed-size</strong>
+          Plain fixed-size chops at exactly N characters, mid-word if it must. The recursive splitter tries the biggest natural boundary first (a blank line between paragraphs) and only falls back to finer cuts when a piece is still too big. Same target size, far cleaner seams - which is why it is the everyday default even though fixed-size is the conceptual starting point.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode self">Self-study</span>Semantic chunking: cutting where the meaning turns<span class="mini">2 min read</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Fixed and recursive splitters cut by <em>shape</em> - characters and separators. Semantic chunking cuts by <em>meaning</em>: it embeds each sentence, walks through the document, and starts a new chunk wherever the topic shifts (a large jump in embedding distance between consecutive sentences). Each chunk ends up being one coherent thought, whatever its length.</p>
+        <ul>
+          <li><strong>Upside.</strong> No idea gets cut in half by an arbitrary character count, and chunks match their topic tightly.</li>
+          <li><strong>Cost.</strong> You embed every sentence just to decide the boundaries, so it is slower and pricier to build the index. Reach for it only when fixed and recursive visibly cut across ideas in your corpus.</li>
+        </ul>
+        <p>In practice most teams ship on recursive and keep semantic chunking in their back pocket for the documents that need it.</p>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>The two levers: size and overlap<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>You will spend most of your chunking life tuning exactly two dials:</p>
+        <ul>
+          <li><strong>Chunk size.</strong> Test a range from small (128-256 tokens) to large (512-1024 tokens). Smaller chunks retrieve more precisely; larger chunks carry more context. The hard ceiling is your embedding model's context window - a chunk can never be bigger than what the model can read.</li>
+          <li><strong>Overlap.</strong> Letting neighboring chunks share some text (the default 200 characters) means a sentence sitting on a boundary still appears whole in at least one chunk. It is cheap insurance against cutting an idea in half.</li>
+        </ul>
+        <div class="callout tip">
+          <strong>Anthropic's contextual chunking</strong>
+          Anthropic recommends keeping chunks small - "usually no more than a few hundred tokens" - and then fixing the context-loss problem separately. Their Contextual Retrieval technique prepends a short, generated 50-100 token context (which document, which section, what it relates to) to each chunk <em>before</em> embedding it. That small addition measurably reduces retrieval failures, because the chunk now carries the context it used to lose when torn from its document.
+        </div>
+      </div>
+    </details>
+
+    <details class="card">
+      <summary><span class="mode live">Live</span>Retrieve small, feed big: sentence-window and parent-document<span class="mini">3 min</span><span class="caret">▶</span></summary>
+      <div class="body">
+        <p>Two strategies deserve a closer look because they resolve the size tension with a clever split: what you <em>index</em> for retrieval does not have to be what you <em>send</em> to the language model.</p>
+        <ul>
+          <li><strong>Sentence-window.</strong> Index each sentence on its own for pinpoint matching, but when a sentence matches, expand outward to its neighbors before building the prompt. You get precise retrieval and readable context.</li>
+          <li><strong>Parent-document.</strong> Index small child chunks so matching is precise, but store which larger parent chunk each child came from. On a hit, feed the LLM the parent, not the tiny child. This is a common, powerful production pattern - precise where it counts, contextual where it matters.</li>
+        </ul>
+        <div class="callout example">
+          <span class="ex-pill">Real world</span>
+          <p><strong>Precise hit, useless answer.</strong> A support bot (anonymized) matched a one-line troubleshooting step perfectly but answered incompletely, because the step assumed three lines of setup above it. Switching to parent-document retrieval - match the line, send the whole procedure - turned partial answers into complete ones without touching the embedding model.</p>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ BUILD-ALONG ============ -->
+  <section class="section" id="build-along">
+    <div class="section-kicker">
+      <span class="klabel">Build-along · Recall indexes Corpus A</span>
+      <h2>Feel a well-formed chunk retrieve <span class="tag demo">★ 10 min · live playground</span></h2>
+    </div>
+    <p class="lede">Recall's first real corpus is Corpus A - the MD's chief-of-staff notes. Each note here is short and about one thing: it is already a clean, well-formed chunk. Type a question and watch a single tidy chunk rise to the top. This is what good chunking earns you - retrieval that returns one focused, usable piece.</p>
+    <div class="ragbox" data-corpus="A" data-k="3"
+         data-caption="Try: 'what did the MD decide about cloud spend?' or 'seat preference for flights' - notice each note is one clean topic, so one chunk answers cleanly."></div>
+    <div class="callout tip">
+      <strong>Honesty note - what this playground really does</strong>
+      To run with zero network calls, this tool uses a <em>simplified</em> embedding: term frequency over a small vocabulary plus a synonym map, and the same function embeds both the documents and your query. Real embedding models are neural and far richer. But the ranking math - cosine similarity over vectors - is exactly what production RAG uses. Only the embedder is simplified; the retrieval mechanic is real.
+    </div>
+    <p>Notice how each note behaves like a good chunk should: focused enough to rank sharply, complete enough to make sense on its own. Now imagine one note glued to five others - the query would match the blob weakly and you would hand the LLM a wall of mostly-irrelevant text. That is the whole argument for chunking, felt rather than told.</p>
+
+    <div class="section-kicker" style="margin-top:2rem">
+      <span class="klabel">Exercise</span>
+      <h2>Chunk your own document three ways <span class="tag exercise">◐ 12 min</span></h2>
+    </div>
+    <p class="lede">Nothing teaches chunking like breaking a document you know well. Pick a real document of your own - a README, a policy, a set of notes.</p>
+    <div class="steps">
+      <div class="step"><p><strong>Cut it three ways.</strong> Run <code>RecursiveCharacterTextSplitter</code> at <code>chunk_size=256</code>, then <code>512</code>, then <code>1000</code>, each with 20% overlap. Print the chunk count and the first two chunks for each.</p></div>
+      <div class="step"><p><strong>Read the seams.</strong> For each size, find one chunk that got cut mid-idea and one that stands cleanly on its own. Which size had more clean chunks?</p></div>
+      <div class="step"><p><strong>Query in your head.</strong> Write one question your document answers. Which size would retrieve the best single chunk to answer it - focused but complete?</p></div>
+      <div class="step"><p><strong>Decide.</strong> In one line, pick the size you would ship for this document and say why. That judgment, repeated across corpora, is chunking expertise.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ HOMEWORK ============ -->
+  <section class="section" id="homework">
+    <div class="section-kicker">
+      <span class="klabel">Homework</span>
+      <h2>Before session b3 <span class="tag exercise">◐ 40 min total</span></h2>
+    </div>
+    <ul>
+      <li>Take the best chunk size from the exercise and re-run it with three overlap values (0, 100, 200 characters). Confirm that some overlap keeps boundary sentences intact and that too much just wastes storage.</li>
+      <li>Implement a tiny contextual-chunking prototype: for three chunks, prepend a one-line context ("From the Q3 board notes, on cloud spend:") by hand, then eyeball how much clearer each chunk reads out of context.</li>
+      <li>Read: Pinecone's "Chunking Strategies" guide end to end, and skim the Anthropic Contextual Retrieval post - note the reported drop in retrieval failures.</li>
+      <li>Keep your three chunked versions. In b3 you will load one of them into a real vector database.</li>
+    </ul>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <section class="section" id="official">
+    <div class="section-kicker">
+      <span class="klabel">Source material</span>
+      <h2>Official sources covered</h2>
+    </div>
+    <p class="lede">Taught from official docs and courses. This page covers ~80% of their working content on chunking - the rest (hosted parsing infra, paid pipelines) stays with the source.</p>
+    <div class="covered">
+      <div class="covered-row"><span class="status pill solid">✓</span><span class="name">Pinecone · Chunking Strategies</span><span class="note">Parts 1-2 · why chunk · fixed-size as the recommended start · size and overlap levers · the strategy ladder</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">DeepLearning.AI · Preprocessing Unstructured Data for LLM Applications</span><span class="note">Part 1 · document structure and where natural split points live</span></div>
+      <div class="covered-row"><span class="status pill light">◐</span><span class="name">Anthropic · Contextual Retrieval (contextual chunking)</span><span class="note">Part 2 · chunks of a few hundred tokens · prepending 50-100 token context before embedding</span></div>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="section" id="quiz">
+    <div class="section-kicker">
+      <span class="klabel">Check yourself</span>
+      <h2>Three questions before you go 🎯 <span class="tag exercise">◐ 90 seconds</span></h2>
+    </div>
+    <div class="quiz-q" data-answer="1">
+      <p class="qtext">1 · Why can't you just embed a whole long document as one vector?</p>
+      <button class="qopt" type="button">A · Embedding models refuse to process prose</button>
+      <button class="qopt" type="button">B · It exceeds the model's input limit and averages all topics into one blurry vector, so precise retrieval is impossible</button>
+      <button class="qopt" type="button">C · One vector per document is illegal in most databases</button>
+      <p class="qwhy">Embedding models have a context limit, and one vector for a long document smears every topic together - the specific answering sentence gets drowned out.</p>
+    </div>
+    <div class="quiz-q" data-answer="2">
+      <p class="qtext">2 · What is the recommended starting point for chunking?</p>
+      <button class="qopt" type="button">A · Semantic chunking, always</button>
+      <button class="qopt" type="button">B · One chunk per sentence</button>
+      <button class="qopt" type="button">C · Fixed-size chunks (Pinecone) - simple, fast, and good enough for most corpora</button>
+      <p class="qwhy">Fixed-size is Pinecone's recommended start. You climb to fancier strategies only when the simple rung stops working.</p>
+    </div>
+    <div class="quiz-q" data-answer="0">
+      <p class="qtext">3 · What does Anthropic's contextual chunking do?</p>
+      <button class="qopt" type="button">A · Prepends a short generated context (50-100 tokens) to each chunk before embedding, reducing retrieval failures</button>
+      <button class="qopt" type="button">B · Makes every chunk exactly 1000 tokens</button>
+      <button class="qopt" type="button">C · Removes overlap between chunks to save space</button>
+      <p class="qwhy">Contextual Retrieval prepends which-document, which-section context to each chunk before embedding, so the chunk carries the context it would otherwise lose.</p>
+    </div>
+    <p class="quiz-score"></p>
+  </section>
+
+  <!-- ============ CHEAT SHEET ============ -->
+  <section class="cheat" id="cheatsheet">
+    <h3>Builder session 2 cheat sheet <span>· pin this</span></h3>
+    <div class="grid-2">
+      <div class="cheat-item"><b>Chunk = atom of retrieval</b><span>The system can only return a chunk you made. Bad chunks, no model can save you.</span></div>
+      <div class="cheat-item"><b>Why chunk</b><span>Model input limits, one-vector-smears-everything, and retrieval returns the chunk not the doc.</span></div>
+      <div class="cheat-item"><b>Goldilocks</b><span>Too big dilutes meaning; too small loses context. Aim for focused-but-complete.</span></div>
+      <div class="cheat-item"><b>Start with fixed-size</b><span>Pinecone's recommended default. Climb the ladder only when it stops working.</span></div>
+      <div class="cheat-item"><b>Recursive splitter</b><span>Tries ["\n\n","\n"," ",""] in order. LangChain defaults: size 1000, overlap 200.</span></div>
+      <div class="cheat-item"><b>Two levers</b><span>Size (128-256 small to 512-1024 large, capped by model window) and overlap (~20%).</span></div>
+      <div class="cheat-item"><b>Sentence-window / parent-doc</b><span>Retrieve small and precise; feed the LLM the bigger neighboring or parent context.</span></div>
+      <div class="cheat-item"><b>Contextual chunking</b><span>Prepend 50-100 tokens of context before embedding. Anthropic's fix for context loss.</span></div>
+    </div>
+  </section>
+
+  <div class="callout win">
+    <strong>★ Recall's status after b2</strong>
+    Recall can now cut real documents into clean, well-formed chunks and has indexed its first corpus - the MD's notes. It retrieves focused pieces, not blobs. But those chunks are still living in memory. In b3 we give Recall a real home: a vector database that stores, indexes, and queries those chunks at scale.
+  </div>
+
+  <footer class="pagefoot">
+    <span>Builder session 2 of 10 · learn-rag-with-phoebe · by Phoebe Fu</span>
+    <span><a href="b1-embeddings.html">← Prev: Embeddings 101</a> &nbsp;·&nbsp; <a href="b3-vector-databases.html">Next: Vector databases →</a></span>
+  </footer>
+
+</main>
+
+<script src="../assets/rag-corpora.js?v=1"></script>
+<script src="../assets/rag-live.js?v=1"></script>
+<script src="../assets/app.js?v=1"></script>
+</body>
+</html>
